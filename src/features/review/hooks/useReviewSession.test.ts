@@ -14,7 +14,12 @@ import {
   listGabaritoEntriesBySession,
 } from "@/storage/indexeddb/gabaritoAdapter";
 import { useReviewSession } from "./useReviewSession";
-import type { GabaritoEntry, Marker, Session } from "@/domain/models/types";
+import type {
+  GabaritoEntry,
+  ImportWarning,
+  Marker,
+  Session,
+} from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
 
@@ -168,17 +173,17 @@ describe("useReviewSession - Review acceptance", () => {
       expect(result.current.snapshot).not.toBeNull();
     });
 
-    let report = null;
-    await act(async () => {
-      report = await result.current.importGabarito("1A,2B,3C", {
+    const report = await act(async () =>
+      result.current.importGabarito("1A,2B,3C", {
         format: "A",
         strategy: "replace",
-      });
-    });
+      })
+    );
 
     expect(report).not.toBeNull();
-    expect(report?.importedCount).toBe(3);
-    expect(report?.skippedCount).toBe(0);
+    if (!report) throw new Error("report expected after import");
+    expect(report.importedCount).toBe(3);
+    expect(report.skippedCount).toBe(0);
 
     const db2 = await openDatabase();
     const entries = await listGabaritoEntriesBySession(db2, sessionId);
@@ -205,16 +210,17 @@ describe("useReviewSession - Review acceptance", () => {
       expect(result.current.snapshot).not.toBeNull();
     });
 
-    let report = null;
-    await act(async () => {
-      report = await result.current.importGabarito("A,B,D,A,C", {
+    const report = await act(async () =>
+      result.current.importGabarito("A,B,D,A,C", {
         format: "B",
         strategy: "replace",
         startQuestionNumber: 5,
-      });
-    });
+      })
+    );
 
-    expect(report?.importedCount).toBe(5);
+    expect(report).not.toBeNull();
+    if (!report) throw new Error("report expected after import");
+    expect(report.importedCount).toBe(5);
 
     const db2 = await openDatabase();
     const entries = await listGabaritoEntriesBySession(db2, sessionId);
@@ -240,17 +246,22 @@ describe("useReviewSession - Review acceptance", () => {
       expect(result.current.snapshot).not.toBeNull();
     });
 
-    let report = null;
-    await act(async () => {
-      report = await result.current.importGabarito("1A,1X,2B,3Z,4C", {
+    const report = await act(async () =>
+      result.current.importGabarito("1A,1X,2B,3Z,4C", {
         format: "A",
         strategy: "replace",
-      });
-    });
+      })
+    );
 
-    expect(report?.importedCount).toBe(3);
-    expect(report?.skippedCount).toBe(2);
-    expect(report?.warnings.filter((w) => w.reason === "INVALID_TOKEN")).toHaveLength(2);
+    expect(report).not.toBeNull();
+    if (!report) throw new Error("report expected after import");
+    expect(report.importedCount).toBe(3);
+    expect(report.skippedCount).toBe(2);
+    expect(
+      report.warnings.filter(
+        (w: ImportWarning) => w.reason === "INVALID_TOKEN"
+      )
+    ).toHaveLength(2);
 
     const db2 = await openDatabase();
     const entries = await listGabaritoEntriesBySession(db2, sessionId);
