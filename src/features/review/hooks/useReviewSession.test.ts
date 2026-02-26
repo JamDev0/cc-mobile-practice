@@ -1,6 +1,6 @@
 /**
- * Review acceptance tests IRG-06, IRG-07, IRG-08.
- * Verifies useReviewSession loads data and computes grading snapshot correctly.
+ * Review acceptance tests IRG-01 through IRG-10.
+ * Verifies useReviewSession loads data, import workflow, and grading snapshot correctly.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -9,9 +9,11 @@ import { deleteDB } from "idb";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { putSession } from "@/storage/indexeddb/sessionAdapter";
 import { putMarker } from "@/storage/indexeddb/markerAdapter";
-import { putGabaritoEntry } from "@/storage/indexeddb/gabaritoAdapter";
+import {
+  putGabaritoEntry,
+  listGabaritoEntriesBySession,
+} from "@/storage/indexeddb/gabaritoAdapter";
 import { useReviewSession } from "./useReviewSession";
-import { deriveMarkerStatuses } from "@/domain/conflicts/deriveMarkerStatuses";
 import type { GabaritoEntry, Marker, Session } from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
@@ -150,6 +152,177 @@ describe("useReviewSession - Review acceptance", () => {
     const blankRow = snap.rows.find((r) => r.status === "blank");
     expect(blankRow).toBeDefined();
     expect(blankRow?.questionNumber).toBe(1);
+  });
+
+  it("IRG-01: Import valid Format A - all entries persisted correctly", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    let report = null;
+    await act(async () => {
+      report = await result.current.importGabarito("1A,2B,3C", {
+        format: "A",
+        strategy: "replace",
+      });
+    });
+
+    expect(report).not.toBeNull();
+    expect(report?.importedCount).toBe(3);
+    expect(report?.skippedCount).toBe(0);
+
+    const db2 = await openDatabase();
+    const entries = await listGabaritoEntriesBySession(db2, sessionId);
+    db2.close();
+
+    expect(entries).toHaveLength(3);
+    const byQ = Object.fromEntries(entries.map((e) => [e.questionNumber, e.answerToken]));
+    expect(byQ[1]).toBe("A");
+    expect(byQ[2]).toBe("B");
+    expect(byQ[3]).toBe("C");
+  });
+
+  it("IRG-02: Import valid Format B with start=5 - first entry maps to Q5", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    let report = null;
+    await act(async () => {
+      report = await result.current.importGabarito("A,B,D,A,C", {
+        format: "B",
+        strategy: "replace",
+        startQuestionNumber: 5,
+      });
+    });
+
+    expect(report?.importedCount).toBe(5);
+
+    const db2 = await openDatabase();
+    const entries = await listGabaritoEntriesBySession(db2, sessionId);
+    db2.close();
+
+    expect(entries).toHaveLength(5);
+    const byQ = Object.fromEntries(entries.map((e) => [e.questionNumber, e.answerToken]));
+    expect(byQ[5]).toBe("A");
+    expect(byQ[9]).toBe("C");
+  });
+
+  it("IRG-03: Import mixed valid/invalid - valid entries imported, warnings shown", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    let report = null;
+    await act(async () => {
+      report = await result.current.importGabarito("1A,1X,2B,3Z,4C", {
+        format: "A",
+        strategy: "replace",
+      });
+    });
+
+    expect(report?.importedCount).toBe(3);
+    expect(report?.skippedCount).toBe(2);
+    expect(report?.warnings.filter((w) => w.reason === "INVALID_TOKEN")).toHaveLength(2);
+
+    const db2 = await openDatabase();
+    const entries = await listGabaritoEntriesBySession(db2, sessionId);
+    db2.close();
+    expect(entries).toHaveLength(3);
+  });
+
+  it("IRG-04: Replace import over existing key - previous entries removed", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+    const g1 = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+    const g2 = mkGabarito({ id: "g2", questionNumber: 2, answerToken: "B" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putGabaritoEntry(db, g1);
+    await putGabaritoEntry(db, g2);
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    await act(async () => {
+      await result.current.importGabarito("3C,4D", {
+        format: "A",
+        strategy: "replace",
+      });
+    });
+
+    const db2 = await openDatabase();
+    const entries = await listGabaritoEntriesBySession(db2, sessionId);
+    db2.close();
+    expect(entries).toHaveLength(2);
+    expect(entries.every((e) => e.questionNumber >= 3)).toBe(true);
+  });
+
+  it("IRG-05: Merge import over existing key - overlaps updated, others preserved", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+    const g1 = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+    const g2 = mkGabarito({ id: "g2", questionNumber: 2, answerToken: "B" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putGabaritoEntry(db, g1);
+    await putGabaritoEntry(db, g2);
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    await act(async () => {
+      await result.current.importGabarito("1C,3D", {
+        format: "A",
+        strategy: "merge",
+      });
+    });
+
+    const db2 = await openDatabase();
+    const entries = await listGabaritoEntriesBySession(db2, sessionId);
+    db2.close();
+    expect(entries).toHaveLength(3);
+    const byQ = Object.fromEntries(entries.map((e) => [e.questionNumber, e.answerToken]));
+    expect(byQ[1]).toBe("C");
+    expect(byQ[2]).toBe("B");
+    expect(byQ[3]).toBe("D");
   });
 
   it("IRG-10: Save gabarito entry - snapshot recomputes", async () => {

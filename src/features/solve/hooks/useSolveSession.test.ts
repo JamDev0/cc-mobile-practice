@@ -128,24 +128,30 @@ describe("useSolveSession - Solve acceptance", () => {
       result.current.createPendingMarker(1, 0.5, 0.5, 100, 100);
     });
     await act(async () => {
-      await result.current.commitMarker("A");
+      await result.current.commitMarker("A", 1);
     });
 
     act(() => {
       result.current.createPendingMarker(1, 0.6, 0.6, 120, 130);
     });
     await act(async () => {
-      await result.current.commitMarker("B");
+      await result.current.commitMarker("B", 1);
     });
 
     await waitFor(() => {
       expect(result.current.markers).toHaveLength(2);
     });
     const [markerA, markerB] = result.current.markers;
+    expect(markerA.questionNumber).toBe(1);
+    expect(markerB.questionNumber).toBe(1);
     expect(result.current.existingQuestionNumbers.has(1)).toBe(true);
 
     act(() => {
       result.current.openEditMarker(markerB);
+    });
+    await waitFor(() => {
+      expect(result.current.editMarker).not.toBeNull();
+      expect(result.current.editMarker?.id).toBe(markerB.id);
     });
     expect(result.current.existingQuestionNumbers.has(1)).toBe(true);
     expect(result.current.existingQuestionNumbers.size).toBe(1);

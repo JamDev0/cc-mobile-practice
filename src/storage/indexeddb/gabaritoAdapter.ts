@@ -24,3 +24,18 @@ export async function listGabaritoEntriesBySession(
 export async function deleteGabaritoEntry(db: DbInstance, entryId: string) {
   await db.delete("gabaritoEntries", entryId);
 }
+
+/**
+ * Delete all gabarito entries for a session. Used by Replace import strategy.
+ */
+export async function deleteAllGabaritoEntriesForSession(
+  db: DbInstance,
+  sessionId: string
+) {
+  const entries = await listGabaritoEntriesBySession(db, sessionId);
+  const tx = db.transaction("gabaritoEntries", "readwrite");
+  await Promise.all([
+    ...entries.map((e) => tx.store.delete(e.id)),
+    tx.done,
+  ]);
+}

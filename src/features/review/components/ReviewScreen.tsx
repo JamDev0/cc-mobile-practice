@@ -3,6 +3,7 @@
 import React, { useCallback, useState } from "react";
 import { useReviewSession } from "../hooks/useReviewSession";
 import { EditGabaritoModal } from "./EditGabaritoModal";
+import { ImportGabaritoModal } from "./ImportGabaritoModal";
 import type { JumpRequest } from "@/features/solve/types";
 import type { Marker, ReviewRow, RowStatus } from "@/domain/models/types";
 
@@ -143,8 +144,11 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     getGabaritoEntryByQuestion,
     saveGabaritoEntry,
     deleteGabaritoEntry,
+    importGabarito,
+    detectImportFormat,
   } = useReviewSession(sessionId);
 
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editGabaritoRow, setEditGabaritoRow] = useState<{
     questionNumber: number;
   } | null>(null);
@@ -257,6 +261,21 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           alignItems: "center",
         }}
       >
+        <button
+          type="button"
+          onClick={() => setShowImportModal(true)}
+          style={{
+            padding: "0.375rem 0.75rem",
+            borderRadius: 6,
+            border: "1px solid #2563eb",
+            background: "white",
+            color: "#2563eb",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+          }}
+        >
+          Import gabarito
+        </button>
         <span style={{ fontWeight: 600 }}>Score: {accuracyLabel}</span>
         <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>
           {snapshot.correctCount} correct · {snapshot.wrongCount} wrong
@@ -451,6 +470,14 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           onSave={saveGabaritoEntry}
           onDelete={deleteGabaritoEntry}
           onClose={() => setEditGabaritoRow(null)}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportGabaritoModal
+          onImport={importGabarito}
+          detectFormat={detectImportFormat}
+          onClose={() => setShowImportModal(false)}
         />
       )}
 
