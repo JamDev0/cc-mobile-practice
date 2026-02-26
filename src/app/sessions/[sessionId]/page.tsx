@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { TabBar } from "@/shared/ui/TabBar";
+import type { JumpRequest } from "@/features/solve/types";
 
 const SolveScreen = dynamic(
   () =>
@@ -24,13 +25,23 @@ const TABS: { id: TabId; label: string }[] = [
 function TabContent({
   tabId,
   sessionId,
+  jumpRequest,
+  onJumpRequestConsumed,
 }: {
   tabId: TabId;
   sessionId: string;
+  jumpRequest: JumpRequest | null;
+  onJumpRequestConsumed: () => void;
 }) {
   switch (tabId) {
     case "solve":
-      return <SolveScreen sessionId={sessionId} />;
+      return (
+        <SolveScreen
+          sessionId={sessionId}
+          jumpRequest={jumpRequest}
+          onJumpRequestConsumed={onJumpRequestConsumed}
+        />
+      );
     case "review":
       return <p>Review: graded rows and answers (placeholder)</p>;
     case "session":
@@ -44,6 +55,14 @@ export default function SessionPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
   const [activeTab, setActiveTab] = useState<TabId>("solve");
+  const [pendingJumpRequest, setPendingJumpRequest] =
+    useState<JumpRequest | null>(null);
+
+  useEffect(() => {
+    if (pendingJumpRequest?.sessionId === sessionId) {
+      setActiveTab("solve");
+    }
+  }, [pendingJumpRequest, sessionId]);
 
   return (
     <main
@@ -63,7 +82,12 @@ export default function SessionPage() {
         <h1>Session: {sessionId}</h1>
       </header>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: activeTab === "solve" ? 0 : "1rem" }}>
-        <TabContent tabId={activeTab} sessionId={sessionId} />
+        <TabContent
+          tabId={activeTab}
+          sessionId={sessionId}
+          jumpRequest={pendingJumpRequest}
+          onJumpRequestConsumed={() => setPendingJumpRequest(null)}
+        />
       </div>
       <TabBar
         tabs={TABS}

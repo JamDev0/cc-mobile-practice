@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PdfViewport } from "./PdfViewport";
 import { MarkerOverlayLayer } from "./MarkerOverlayLayer";
 import { RadialPickerPortal } from "./RadialPickerPortal";
@@ -9,12 +9,21 @@ import { SolveHeader } from "./SolveHeader";
 import { useSolveSession } from "../hooks/useSolveSession";
 import type { AnswerToken } from "@/domain/models/types";
 import type { PendingMarker } from "../types";
+import type { JumpRequest } from "../types";
+
+const HIGHLIGHT_PULSE_MS = 1000;
 
 interface SolveScreenProps {
   sessionId: string;
+  jumpRequest?: JumpRequest | null;
+  onJumpRequestConsumed?: () => void;
 }
 
-export function SolveScreen({ sessionId }: SolveScreenProps) {
+export function SolveScreen({
+  sessionId,
+  jumpRequest = null,
+  onJumpRequestConsumed,
+}: SolveScreenProps) {
   const {
     session,
     pdfBlob,
@@ -34,6 +43,7 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
     closeEditMarker,
     saveEditMarker,
     deleteEditMarker,
+    updateMarkerPosition,
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,
@@ -43,6 +53,54 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
     () => markers.some((m) => m.status === "conflict"),
     [markers]
   );
+
+  const [scrollToPageNumber, setScrollToPageNumber] = useState<number | null>(
+    null
+  );
+  const [jumpError, setJumpError] = useState<string | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (
+      !jumpRequest ||
+      jumpRequest.sessionId !== sessionId ||
+      !onJumpRequestConsumed
+    )
+      return;
+
+    const markerExists = markers.some((m) => m.id === jumpRequest.markerId);
+    if (!markerExists) {
+      setJumpError("Marker not found");
+      onJumpRequestConsumed();
+      const t = setTimeout(() => setJumpError(null), 3000);
+      return () => clearTimeout(t);
+    }
+
+    setActivePage(jumpRequest.pageNumber);
+    setHighlightedMarkerId(jumpRequest.markerId);
+    setScrollToPageNumber(jumpRequest.pageNumber);
+    onJumpRequestConsumed();
+
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedMarkerId(null);
+      setScrollToPageNumber(null);
+      highlightTimeoutRef.current = null;
+    }, HIGHLIGHT_PULSE_MS);
+
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, [
+    jumpRequest,
+    sessionId,
+    markers,
+    onJumpRequestConsumed,
+    setActivePage,
+    setHighlightedMarkerId,
+  ]);
 
   const handlePageTap = useCallback(
     (
@@ -71,8 +129,20 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
     [commitMarker]
   );
 
+  const handleMarkerDragEnd = useCallback(
+    (markerId: string, pageNumber: number, xPct: number, yPct: number) => {
+      updateMarkerPosition(markerId, pageNumber, xPct, yPct);
+    },
+    [updateMarkerPosition]
+  );
+
   const renderMarkerOverlay = useCallback(
-    (pageNumber: number, width: number, height: number) => {
+    (
+      pageNumber: number,
+      width: number,
+      height: number,
+      getPageRect: () => DOMRect | undefined
+    ) => {
       return (
         <MarkerOverlayLayer
           markers={markers}
@@ -80,11 +150,18 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
           renderWidth={width}
           renderHeight={height}
           onMarkerClick={openEditMarker}
+          onMarkerDragEnd={handleMarkerDragEnd}
+          getPageRect={getPageRect}
           highlightedMarkerId={highlightedMarkerId}
         />
       );
     },
-    [markers, openEditMarker, highlightedMarkerId]
+    [
+      markers,
+      openEditMarker,
+      handleMarkerDragEnd,
+      highlightedMarkerId,
+    ]
   );
 
   if (error) {
@@ -112,6 +189,19 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
         minHeight: 0,
       }}
     >
+      {jumpError && (
+        <div
+          role="alert"
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#fef3c7",
+            color: "#92400e",
+            fontSize: "0.875rem",
+          }}
+        >
+          {jumpError}
+        </div>
+      )}
       <SolveHeader
         sessionTitle={session.title}
         currentPage={activePage}
@@ -128,6 +218,7 @@ export function SolveScreen({ sessionId }: SolveScreenProps) {
         activePage={activePage}
         onActivePageChange={setActivePage}
         highlightedMarkerId={highlightedMarkerId}
+        scrollToPageNumber={scrollToPageNumber}
       />
       {pendingMarker && pendingAnchor && (
         <RadialPickerPortal

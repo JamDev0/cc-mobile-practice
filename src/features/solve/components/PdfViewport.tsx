@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -25,12 +25,15 @@ interface PdfViewportProps {
   renderMarkerOverlay: (
     pageNumber: number,
     width: number,
-    height: number
+    height: number,
+    getPageRect: () => DOMRect | undefined
   ) => React.ReactNode;
   pendingMarker: PendingMarker | null;
   activePage: number;
   onActivePageChange: (page: number) => void;
   highlightedMarkerId: string | null;
+  /** When set, scrolls this page into view (for jump-to-marker). */
+  scrollToPageNumber: number | null;
 }
 
 const RENDER_WINDOW = 1;
@@ -45,11 +48,23 @@ export function PdfViewport({
   activePage,
   onActivePageChange,
   highlightedMarkerId,
+  scrollToPageNumber,
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pageRectRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [pageDimensions, setPageDimensions] = useState<
     Map<number, { width: number; height: number }>
   >(new Map());
+
+  useEffect(() => {
+    if (scrollToPageNumber == null || !containerRef.current) return;
+    const pageEl = containerRef.current.querySelector(
+      `[data-page-number="${scrollToPageNumber}"]`
+    );
+    if (pageEl) {
+      pageEl.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [scrollToPageNumber]);
 
   const handlePageLoadSuccess = useCallback(
     ({ pageNumber, width, height }: { pageNumber: number; width: number; height: number }) => {
@@ -186,6 +201,9 @@ export function PdfViewport({
               />
             </div>
             <div
+              ref={(el) => {
+                if (el) pageRectRefs.current.set(pageNum, el);
+              }}
               style={{
                 position: "absolute",
                 top: 0,
@@ -198,7 +216,14 @@ export function PdfViewport({
               {(() => {
                 const dims = pageDimensions.get(pageNum);
                 if (!dims) return null;
-                return renderMarkerOverlay(pageNum, dims.width, dims.height);
+                const getPageRect = () =>
+                  pageRectRefs.current.get(pageNum)?.getBoundingClientRect();
+                return renderMarkerOverlay(
+                  pageNum,
+                  dims.width,
+                  dims.height,
+                  getPageRect
+                );
               })()}
             </div>
           </div>

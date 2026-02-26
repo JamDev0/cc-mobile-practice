@@ -45,6 +45,7 @@ export interface UseSolveSessionResult {
     answerToken?: AnswerToken;
   }) => Promise<void>;
   deleteEditMarker: () => Promise<void>;
+  updateMarkerPosition: (markerId: string, pageNumber: number, xPct: number, yPct: number) => Promise<void>;
   setHighlightedMarkerId: (id: string | null) => void;
   existingQuestionNumbers: Set<number>;
   pendingAnchor: { x: number; y: number } | null;
@@ -234,6 +235,37 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     }
   }, [editMarker, sessionId]);
 
+  const updateMarkerPosition = useCallback(
+    async (markerId: string, pageNumber: number, xPct: number, yPct: number) => {
+      if (!sessionId) return;
+      const marker = markers.find((m) => m.id === markerId);
+      if (!marker) return;
+
+      const { xPct: nx, yPct: ny } = normalizeCoordinates(xPct, yPct);
+      const updated: Marker = {
+        ...marker,
+        pageNumber,
+        xPct: nx,
+        yPct: ny,
+        updatedAt: Date.now(),
+      };
+
+      try {
+        const db = await openDatabase();
+        await putMarker(db, updated);
+        const all = await listMarkersBySession(db, sessionId);
+        db.close();
+        setMarkers(deriveMarkerStatuses(all));
+        if (editMarker?.id === markerId) {
+          setEditMarker(updated);
+        }
+      } catch {
+        // non-blocking
+      }
+    },
+    [sessionId, markers, editMarker]
+  );
+
   return {
     session,
     pdfBlob,
@@ -253,6 +285,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     closeEditMarker,
     saveEditMarker,
     deleteEditMarker,
+    updateMarkerPosition,
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,

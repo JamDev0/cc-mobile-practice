@@ -151,6 +151,45 @@ describe("useSolveSession - Solve acceptance", () => {
     expect(result.current.existingQuestionNumbers.size).toBe(1);
   });
 
+  it("S-UI-03 (I-05): Drag marker - position updated and persisted", async () => {
+    const sessionId = "solve-test-session-drag";
+    await seedSession(sessionId);
+
+    const { result } = renderHook(() => useSolveSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.session).not.toBeNull();
+    });
+
+    act(() => {
+      result.current.createPendingMarker(1, 0.5, 0.5, 100, 100);
+    });
+    await act(async () => {
+      await result.current.commitMarker("C");
+    });
+
+    await waitFor(() => {
+      expect(result.current.markers).toHaveLength(1);
+    });
+    const marker = result.current.markers[0];
+    expect(marker.xPct).toBe(0.5);
+    expect(marker.yPct).toBe(0.5);
+
+    await act(async () => {
+      await result.current.updateMarkerPosition(marker.id, 1, 0.25, 0.75);
+    });
+
+    expect(result.current.markers[0].xPct).toBe(0.25);
+    expect(result.current.markers[0].yPct).toBe(0.75);
+
+    const db = await openDatabase();
+    const markersFromDb = await listMarkersBySession(db, sessionId);
+    db.close();
+    expect(markersFromDb).toHaveLength(1);
+    expect(markersFromDb[0].xPct).toBe(0.25);
+    expect(markersFromDb[0].yPct).toBe(0.75);
+  });
+
   it("S-UI-05: Delete marker - row and grading recompute immediately", async () => {
     const sessionId = "solve-test-session-3";
     await seedSession(sessionId);

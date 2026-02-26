@@ -1,6 +1,8 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
 import { pctToPixel } from "@/domain/models/coordinates";
+import { tapToPct } from "@/domain/models/coordinates";
 import type { Marker } from "@/domain/models/types";
 
 interface MarkerDotProps {
@@ -8,22 +10,95 @@ interface MarkerDotProps {
   renderWidth: number;
   renderHeight: number;
   onClick: () => void;
+  onDragEnd: (xPct: number, yPct: number) => void;
+  getPageRect: () => DOMRect | undefined;
   isHighlighted: boolean;
 }
+
+const DRAG_THRESHOLD_PX = 4;
 
 export function MarkerDot({
   marker,
   renderWidth,
   renderHeight,
   onClick,
+  onDragEnd,
+  getPageRect,
   isHighlighted,
 }: MarkerDotProps) {
+  const [dragPos, setDragPos] = useState<{ xPct: number; yPct: number } | null>(
+    null
+  );
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didDragRef = useRef(false);
+  const lastDragPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
+
+  const displayX = dragPos?.xPct ?? marker.xPct;
+  const displayY = dragPos?.yPct ?? marker.yPct;
   const { pixelX, pixelY } = pctToPixel(
-    marker.xPct,
-    marker.yPct,
+    displayX,
+    displayY,
     renderWidth,
     renderHeight
   );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      didDragRef.current = false;
+    },
+    []
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const start = dragStartRef.current;
+      if (!start) return;
+
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (!didDragRef.current && (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX)) {
+        didDragRef.current = true;
+      }
+
+      if (didDragRef.current) {
+        const rect = getPageRect();
+        if (!rect) return;
+        const relX = e.clientX - rect.left;
+        const relY = e.clientY - rect.top;
+        const { xPct, yPct } = tapToPct(relX, relY, rect.width, rect.height);
+        const pos = { xPct, yPct };
+        lastDragPosRef.current = pos;
+        setDragPos(pos);
+      }
+    },
+    [getPageRect]
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      dragStartRef.current = null;
+
+      const committed = lastDragPosRef.current;
+      lastDragPosRef.current = null;
+      setDragPos(null);
+
+      if (didDragRef.current && committed) {
+        onDragEnd(committed.xPct, committed.yPct);
+      } else if (!didDragRef.current) {
+        onClick();
+      }
+    },
+    [onDragEnd, onClick]
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    dragStartRef.current = null;
+    setDragPos(null);
+  }, []);
 
   const token = marker.answerToken ?? "?";
   const isConflict = marker.status === "conflict";
@@ -35,10 +110,10 @@ export function MarkerDot({
       aria-label={`Marker question ${marker.questionNumber}, answer ${token}${
         isConflict ? ", conflict" : ""
       }`}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -65,10 +140,11 @@ export function MarkerDot({
         justifyContent: "center",
         fontSize: 10,
         fontWeight: 600,
-        cursor: "pointer",
+        cursor: "grab",
         pointerEvents: "auto",
         boxShadow: isHighlighted ? "0 0 0 3px rgba(59, 130, 246, 0.5)" : undefined,
-        transition: "box-shadow 0.2s",
+        transition: dragPos ? "none" : "box-shadow 0.2s",
+        touchAction: "none",
       }}
     >
       {token}

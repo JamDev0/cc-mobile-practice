@@ -10,6 +10,13 @@ interface MarkerOverlayLayerProps {
   renderWidth: number;
   renderHeight: number;
   onMarkerClick: (marker: Marker) => void;
+  onMarkerDragEnd: (
+    markerId: string,
+    pageNumber: number,
+    xPct: number,
+    yPct: number
+  ) => void;
+  getPageRect: () => DOMRect | undefined;
   highlightedMarkerId: string | null;
 }
 
@@ -19,6 +26,8 @@ export function MarkerOverlayLayer({
   renderWidth,
   renderHeight,
   onMarkerClick,
+  onMarkerDragEnd,
+  getPageRect,
   highlightedMarkerId,
 }: MarkerOverlayLayerProps) {
   const pageMarkers = useMemo(
@@ -37,6 +46,10 @@ export function MarkerOverlayLayer({
           renderWidth={renderWidth}
           renderHeight={renderHeight}
           onClick={() => onMarkerClick(marker)}
+          onDragEnd={(xPct, yPct) =>
+            onMarkerDragEnd(marker.id, pageNumber, xPct, yPct)
+          }
+          getPageRect={getPageRect}
           isHighlighted={marker.id === highlightedMarkerId}
         />
       ))}
