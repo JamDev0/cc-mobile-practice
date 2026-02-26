@@ -1,8 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { TabBar } from "@/shared/ui/TabBar";
+
+const SolveScreen = dynamic(
+  () =>
+    import("@/features/solve/components/SolveScreen").then((m) => ({
+      default: m.SolveScreen,
+    })),
+  { ssr: false }
+);
 
 type TabId = "solve" | "review" | "session";
 
@@ -12,10 +21,16 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "session", label: "Session" },
 ];
 
-function TabContent({ tabId }: { tabId: TabId }) {
+function TabContent({
+  tabId,
+  sessionId,
+}: {
+  tabId: TabId;
+  sessionId: string;
+}) {
   switch (tabId) {
     case "solve":
-      return <p>Solve: PDF viewport and markers (placeholder)</p>;
+      return <SolveScreen sessionId={sessionId} />;
     case "review":
       return <p>Review: graded rows and answers (placeholder)</p>;
     case "session":
@@ -47,8 +62,8 @@ export default function SessionPage() {
       >
         <h1>Session: {sessionId}</h1>
       </header>
-      <div style={{ flex: 1, padding: "1rem" }}>
-        <TabContent tabId={activeTab} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: activeTab === "solve" ? 0 : "1rem" }}>
+        <TabContent tabId={activeTab} sessionId={sessionId} />
       </div>
       <TabBar
         tabs={TABS}

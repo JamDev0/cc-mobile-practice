@@ -18,6 +18,15 @@ export async function listMarkersBySession(db: DbInstance, sessionId: string) {
   return db.getAllFromIndex("markers", "sessionId", sessionId);
 }
 
+export async function listMarkersByPage(
+  db: DbInstance,
+  sessionId: string,
+  pageNumber: number
+): Promise<Marker[]> {
+  const all = await listMarkersBySession(db, sessionId);
+  return all.filter((m) => m.pageNumber === pageNumber);
+}
+
 export async function deleteMarker(db: DbInstance, markerId: string) {
   await db.delete("markers", markerId);
 }
