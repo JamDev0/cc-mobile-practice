@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -33,6 +34,12 @@ export default function SessionsPage() {
   useEffect(() => {
     refreshSessions();
   }, [refreshSessions]);
+
+  useEffect(() => {
+    if (!loadingSessions) {
+      markViewInteractive("sessions");
+    }
+  }, [loadingSessions]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {

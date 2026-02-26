@@ -8,6 +8,7 @@ import { RadialPickerPortal } from "./RadialPickerPortal";
 import { EditMarkerSheet } from "./EditMarkerSheet";
 import { SolveHeader } from "./SolveHeader";
 import { useSolveSession } from "../hooks/useSolveSession";
+import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import type { AnswerToken } from "@/domain/models/types";
 import type { PendingMarker } from "../types";
 import type { JumpRequest } from "../types";
@@ -67,6 +68,12 @@ export function SolveScreen({
   );
   const [jumpError, setJumpError] = useState<string | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (session && !sessionNotFound) {
+      markViewInteractive("solve");
+    }
+  }, [session, sessionNotFound]);
 
   useEffect(() => {
     if (

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useReviewSession } from "../hooks/useReviewSession";
+import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import { EditGabaritoModal } from "./EditGabaritoModal";
 import { ImportGabaritoModal } from "./ImportGabaritoModal";
 import type { JumpRequest } from "@/features/solve/types";
@@ -160,6 +161,12 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     row: ReviewRow;
     openEditAfterJump: boolean;
   } | null>(null);
+
+  useEffect(() => {
+    if (session && snapshot && !sessionNotFound) {
+      markViewInteractive("review");
+    }
+  }, [session, snapshot, sessionNotFound]);
 
   const handleQuestionNumberTap = useCallback(
     (row: ReviewRow) => {
