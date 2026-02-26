@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/ 2>/dev/null || true"
+    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/ 2>/dev/null || true",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "^14.2.35",
@@ -20,6 +21,7 @@
     "react-pdf": "^10.4.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",
