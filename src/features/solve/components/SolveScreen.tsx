@@ -68,8 +68,8 @@ export function SolveScreen({
     )
       return;
 
-    const markerExists = markers.some((m) => m.id === jumpRequest.markerId);
-    if (!markerExists) {
+    const marker = markers.find((m) => m.id === jumpRequest.markerId);
+    if (!marker) {
       setJumpError("Marker not found");
       onJumpRequestConsumed();
       const t = setTimeout(() => setJumpError(null), 3000);
@@ -79,6 +79,9 @@ export function SolveScreen({
     setActivePage(jumpRequest.pageNumber);
     setHighlightedMarkerId(jumpRequest.markerId);
     setScrollToPageNumber(jumpRequest.pageNumber);
+    if (jumpRequest.openEditMarkerId && marker.id === jumpRequest.openEditMarkerId) {
+      openEditMarker(marker);
+    }
     onJumpRequestConsumed();
 
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
@@ -100,6 +103,7 @@ export function SolveScreen({
     onJumpRequestConsumed,
     setActivePage,
     setHighlightedMarkerId,
+    openEditMarker,
   ]);
 
   const handlePageTap = useCallback(

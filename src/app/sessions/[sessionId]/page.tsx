@@ -14,6 +14,14 @@ const SolveScreen = dynamic(
   { ssr: false }
 );
 
+const ReviewScreen = dynamic(
+  () =>
+    import("@/features/review/components/ReviewScreen").then((m) => ({
+      default: m.ReviewScreen,
+    })),
+  { ssr: false }
+);
+
 type TabId = "solve" | "review" | "session";
 
 const TABS: { id: TabId; label: string }[] = [
@@ -27,11 +35,13 @@ function TabContent({
   sessionId,
   jumpRequest,
   onJumpRequestConsumed,
+  onRequestJump,
 }: {
   tabId: TabId;
   sessionId: string;
   jumpRequest: JumpRequest | null;
   onJumpRequestConsumed: () => void;
+  onRequestJump: (req: JumpRequest) => void;
 }) {
   switch (tabId) {
     case "solve":
@@ -43,7 +53,12 @@ function TabContent({
         />
       );
     case "review":
-      return <p>Review: graded rows and answers (placeholder)</p>;
+      return (
+        <ReviewScreen
+          sessionId={sessionId}
+          onRequestJump={onRequestJump}
+        />
+      );
     case "session":
       return <p>Session: metadata and data loss warning (placeholder)</p>;
     default:
@@ -87,6 +102,7 @@ export default function SessionPage() {
           sessionId={sessionId}
           jumpRequest={pendingJumpRequest}
           onJumpRequestConsumed={() => setPendingJumpRequest(null)}
+          onRequestJump={setPendingJumpRequest}
         />
       </div>
       <TabBar
