@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { TabBar } from "@/shared/ui/TabBar";
+import { SessionTabPanel } from "@/features/session/components/SessionTabPanel";
 import type { JumpRequest } from "@/features/solve/types";
 
 const SolveScreen = dynamic(
@@ -60,7 +61,7 @@ function TabContent({
         />
       );
     case "session":
-      return <p>Session: metadata and data loss warning (placeholder)</p>;
+      return <SessionTabPanel sessionId={sessionId} />;
     default:
       return null;
   }
