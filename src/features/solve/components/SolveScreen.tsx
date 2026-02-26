@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PdfViewport } from "./PdfViewport";
 import { MarkerOverlayLayer } from "./MarkerOverlayLayer";
 import { RadialPickerPortal } from "./RadialPickerPortal";
@@ -64,10 +64,11 @@ export function SolveScreen({
     if (
       !jumpRequest ||
       jumpRequest.sessionId !== sessionId ||
-      !onJumpRequestConsumed
+      !onJumpRequestConsumed ||
+      !session
     )
       return;
-
+    // Session load includes markers; avoid consuming before load completes
     const marker = markers.find((m) => m.id === jumpRequest.markerId);
     if (!marker) {
       setJumpError("Marker not found");
@@ -99,6 +100,7 @@ export function SolveScreen({
   }, [
     jumpRequest,
     sessionId,
+    session,
     markers,
     onJumpRequestConsumed,
     setActivePage,
