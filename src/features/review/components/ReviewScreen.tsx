@@ -142,12 +142,14 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     session,
     snapshot,
     error,
+    writeError,
     sessionNotFound,
     getGabaritoEntryByQuestion,
     saveGabaritoEntry,
     deleteGabaritoEntry,
     importGabarito,
     detectImportFormat,
+    clearWriteError,
   } = useReviewSession(sessionId);
 
   const [showImportModal, setShowImportModal] = useState(false);
@@ -267,6 +269,39 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
         overflow: "auto",
       }}
     >
+      {writeError && (
+        <div
+          role="alert"
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#fee2e2",
+            color: "#991b1b",
+            fontSize: "0.875rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
+          <span>{writeError}</span>
+          <button
+            type="button"
+            onClick={clearWriteError}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.25rem",
+              fontSize: "1rem",
+              color: "inherit",
+              lineHeight: 1,
+            }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div
         style={{
           padding: "1rem",

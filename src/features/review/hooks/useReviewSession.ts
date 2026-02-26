@@ -47,6 +47,8 @@ export interface UseReviewSessionResult {
   gabaritoEntries: GabaritoEntry[];
   snapshot: GradingSnapshot | null;
   error: string | null;
+  /** Non-blocking error from failed DB writes (e.g. save gabarito, import). */
+  writeError: string | null;
   /** True when load completed but session does not exist. */
   sessionNotFound: boolean;
   refresh: () => Promise<void>;
@@ -61,6 +63,7 @@ export interface UseReviewSessionResult {
     options: ImportGabaritoOptions
   ) => Promise<ImportReport | null>;
   detectImportFormat: (rawText: string) => ReturnType<typeof detectFormat>;
+  clearWriteError: () => void;
 }
 
 export function useReviewSession(
@@ -71,12 +74,16 @@ export function useReviewSession(
   const [gabaritoEntries, setGabaritoEntries] = useState<GabaritoEntry[]>([]);
   const [snapshot, setSnapshot] = useState<GradingSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
   const [sessionNotFound, setSessionNotFound] = useState(false);
+
+  const clearWriteError = useCallback(() => setWriteError(null), []);
 
   const loadData = useCallback(async () => {
     if (!sessionId) return;
     setSessionNotFound(false);
     setError(null);
+    setWriteError(null);
     try {
       const db = await openDatabase();
       const s = await getSession(db, sessionId);
@@ -138,8 +145,10 @@ export function useReviewSession(
         setSnapshot(
           computeGradingSnapshot(sessionId, markers, all)
         );
-      } catch {
-        // non-blocking
+        setWriteError(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to save gabarito";
+        setWriteError(msg);
       }
     },
     [sessionId, gabaritoEntries, markers]
@@ -157,8 +166,10 @@ export function useReviewSession(
         setSnapshot(
           computeGradingSnapshot(sessionId, markers, all)
         );
-      } catch {
-        // non-blocking
+        setWriteError(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to delete gabarito";
+        setWriteError(msg);
       }
     },
     [sessionId, markers]
@@ -223,8 +234,11 @@ export function useReviewSession(
         db.close();
         setGabaritoEntries(all);
         setSnapshot(computeGradingSnapshot(sessionId, markers, all));
+        setWriteError(null);
         return report;
-      } catch {
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to import gabarito";
+        setWriteError(msg);
         return null;
       }
     },
@@ -237,6 +251,7 @@ export function useReviewSession(
     gabaritoEntries,
     snapshot,
     error,
+    writeError,
     sessionNotFound,
     refresh,
     saveGabaritoEntry,
@@ -244,5 +259,6 @@ export function useReviewSession(
     getGabaritoEntryByQuestion,
     importGabarito: importGabaritoFn,
     detectImportFormat: detectImportFormatForText,
+    clearWriteError,
   };
 }

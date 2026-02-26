@@ -34,6 +34,8 @@ export interface UseSolveSessionResult {
   highlightedMarkerId: string | null;
   activePage: number;
   error: string | null;
+  /** Non-blocking error from failed DB writes (e.g. save marker, update position). */
+  writeError: string | null;
   /** True when load completed but session does not exist. */
   sessionNotFound: boolean;
   setPageCount: (n: number) => void;
@@ -54,6 +56,7 @@ export interface UseSolveSessionResult {
   pendingAnchor: { x: number; y: number } | null;
   /** E_PDF_BLOB_MISSING recovery: reattach PDF to session when blob missing. */
   reattachPdf: (file: File) => Promise<{ ok: boolean; error?: string }>;
+  clearWriteError: () => void;
 }
 
 export function useSolveSession(sessionId: string | null): UseSolveSessionResult {
@@ -67,12 +70,16 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
   const [highlightedMarkerId, setHighlightedMarkerId] = useState<string | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
   const [sessionNotFound, setSessionNotFound] = useState(false);
+
+  const clearWriteError = useCallback(() => setWriteError(null), []);
 
   const loadData = useCallback(async () => {
     if (!sessionId) return;
     setSessionNotFound(false);
     setError(null);
+    setWriteError(null);
     try {
       const db = await openDatabase();
       const s = await getSession(db, sessionId);
@@ -103,8 +110,10 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
       await putSession(db, updated);
       db.close();
       setSession(updated);
-    } catch {
-      // non-blocking
+      setWriteError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save page count";
+      setWriteError(msg);
     }
   }, [sessionId, session]);
 
@@ -171,7 +180,9 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
         setPendingMarker(null);
         setPendingAnchor(null);
         return true;
-      } catch {
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to save marker";
+        setWriteError(msg);
         return false;
       }
     },
@@ -224,8 +235,10 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
         db.close();
         setMarkers(deriveMarkerStatuses(all));
         setEditMarker(updated);
-      } catch {
-        // handle error
+        setWriteError(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to save marker";
+        setWriteError(msg);
       }
     },
     [editMarker, sessionId]
@@ -240,8 +253,10 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
       db.close();
       setMarkers(deriveMarkerStatuses(all));
       setEditMarker(null);
-    } catch {
-      // handle error
+      setWriteError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete marker";
+      setWriteError(msg);
     }
   }, [editMarker, sessionId]);
 
@@ -269,8 +284,10 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
         if (editMarker?.id === markerId) {
           setEditMarker(updated);
         }
-      } catch {
-        // non-blocking
+        setWriteError(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to update marker position";
+        setWriteError(msg);
       }
     },
     [sessionId, markers, editMarker]
@@ -305,6 +322,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     highlightedMarkerId,
     activePage,
     error,
+    writeError,
     sessionNotFound,
     setPageCount,
     setActivePage,
@@ -320,5 +338,6 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     existingQuestionNumbers,
     pendingAnchor,
     reattachPdf,
+    clearWriteError,
   };
 }

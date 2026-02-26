@@ -35,6 +35,7 @@ export function SolveScreen({
     highlightedMarkerId,
     activePage,
     error,
+    writeError,
     sessionNotFound,
     setPageCount,
     setActivePage,
@@ -50,6 +51,7 @@ export function SolveScreen({
     existingQuestionNumbers,
     pendingAnchor,
     reattachPdf,
+    clearWriteError,
   } = useSolveSession(sessionId);
 
   const [reattachError, setReattachError] = useState<string | null>(null);
@@ -274,6 +276,39 @@ export function SolveScreen({
               {reattachError}
             </p>
           )}
+        </div>
+      )}
+      {writeError && (
+        <div
+          role="alert"
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#fee2e2",
+            color: "#991b1b",
+            fontSize: "0.875rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
+          <span>{writeError}</span>
+          <button
+            type="button"
+            onClick={clearWriteError}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.25rem",
+              fontSize: "1rem",
+              color: "inherit",
+              lineHeight: 1,
+            }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
       {jumpError && (
