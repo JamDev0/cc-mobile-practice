@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
+import Link from "next/link";
 import { useReviewSession } from "../hooks/useReviewSession";
 import { EditGabaritoModal } from "./EditGabaritoModal";
 import { ImportGabaritoModal } from "./ImportGabaritoModal";
@@ -141,6 +142,7 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     session,
     snapshot,
     error,
+    sessionNotFound,
     getGabaritoEntryByQuestion,
     saveGabaritoEntry,
     deleteGabaritoEntry,
@@ -209,6 +211,20 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     return (
       <div style={{ padding: "2rem" }}>
         <p style={{ color: "red" }}>{error}</p>
+        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+          Back to Sessions
+        </Link>
+      </div>
+    );
+  }
+
+  if (sessionNotFound) {
+    return (
+      <div style={{ padding: "2rem" }}>
+        <p>Session not found.</p>
+        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+          Back to Sessions
+        </Link>
       </div>
     );
   }

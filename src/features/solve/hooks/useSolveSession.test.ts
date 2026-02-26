@@ -196,6 +196,16 @@ describe("useSolveSession - Solve acceptance", () => {
     expect(markersFromDb[0].yPct).toBe(0.75);
   });
 
+  it("sessionNotFound when session does not exist", async () => {
+    const sessionId = "non-existent-session";
+    const { result } = renderHook(() => useSolveSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.sessionNotFound).toBe(true);
+      expect(result.current.session).toBeNull();
+    });
+  });
+
   it("S-UI-05: Delete marker - row and grading recompute immediately", async () => {
     const sessionId = "solve-test-session-3";
     await seedSession(sessionId);

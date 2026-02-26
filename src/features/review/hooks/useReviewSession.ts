@@ -47,6 +47,8 @@ export interface UseReviewSessionResult {
   gabaritoEntries: GabaritoEntry[];
   snapshot: GradingSnapshot | null;
   error: string | null;
+  /** True when load completed but session does not exist. */
+  sessionNotFound: boolean;
   refresh: () => Promise<void>;
   saveGabaritoEntry: (
     questionNumber: number,
@@ -69,9 +71,12 @@ export function useReviewSession(
   const [gabaritoEntries, setGabaritoEntries] = useState<GabaritoEntry[]>([]);
   const [snapshot, setSnapshot] = useState<GradingSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionNotFound, setSessionNotFound] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!sessionId) return;
+    setSessionNotFound(false);
+    setError(null);
     try {
       const db = await openDatabase();
       const s = await getSession(db, sessionId);
@@ -84,9 +89,10 @@ export function useReviewSession(
       setSnapshot(
         computeGradingSnapshot(sessionId, deriveMarkerStatuses(m), g)
       );
-      setError(null);
+      setSessionNotFound(s == null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
+      setSessionNotFound(false);
     }
   }, [sessionId]);
 
@@ -231,6 +237,7 @@ export function useReviewSession(
     gabaritoEntries,
     snapshot,
     error,
+    sessionNotFound,
     refresh,
     saveGabaritoEntry,
     deleteGabaritoEntry: deleteGabaritoEntryById,

@@ -84,6 +84,16 @@ describe("useReviewSession - Review acceptance", () => {
     await deleteDB(DB_NAME);
   });
 
+  it("sessionNotFound when session does not exist", async () => {
+    const sessionId = "non-existent-session";
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.sessionNotFound).toBe(true);
+      expect(result.current.session).toBeNull();
+    });
+  });
+
   it("IRG-06: Conflict rows present - excluded from score and snapshot contains conflict status", async () => {
     const sessionId = "review-test-session";
     const session = mkSession({ id: sessionId });

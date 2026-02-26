@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { PdfViewport } from "./PdfViewport";
 import { MarkerOverlayLayer } from "./MarkerOverlayLayer";
 import { RadialPickerPortal } from "./RadialPickerPortal";
@@ -34,6 +35,7 @@ export function SolveScreen({
     highlightedMarkerId,
     activePage,
     error,
+    sessionNotFound,
     setPageCount,
     setActivePage,
     createPendingMarker,
@@ -47,7 +49,11 @@ export function SolveScreen({
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,
+    reattachPdf,
   } = useSolveSession(sessionId);
+
+  const [reattachError, setReattachError] = useState<string | null>(null);
+  const reattachInputRef = useRef<HTMLInputElement>(null);
 
   const hasConflict = useMemo(
     () => markers.some((m) => m.status === "conflict"),
@@ -170,10 +176,38 @@ export function SolveScreen({
     ]
   );
 
+  const handleReattachFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setReattachError(null);
+      const result = await reattachPdf(file);
+      e.target.value = "";
+      if (!result.ok) {
+        setReattachError(result.error ?? "Failed to reattach");
+      }
+    },
+    [reattachPdf]
+  );
+
   if (error) {
     return (
       <div style={{ padding: "2rem" }}>
         <p style={{ color: "red" }}>{error}</p>
+        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+          Back to Sessions
+        </Link>
+      </div>
+    );
+  }
+
+  if (sessionNotFound) {
+    return (
+      <div style={{ padding: "2rem" }}>
+        <p>Session not found.</p>
+        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+          Back to Sessions
+        </Link>
       </div>
     );
   }
@@ -186,6 +220,8 @@ export function SolveScreen({
     );
   }
 
+  const pdfBlobMissing = session && !pdfBlob;
+
   return (
     <div
       style={{
@@ -195,6 +231,51 @@ export function SolveScreen({
         minHeight: 0,
       }}
     >
+      {pdfBlobMissing && (
+        <div
+          role="alert"
+          style={{
+            padding: "1rem",
+            background: "#fef7e0",
+            borderBottom: "1px solid #f9a825",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 500, color: "#b06000" }}>
+            PDF file is missing. Please reattach it to continue.
+          </p>
+          <div>
+            <input
+              ref={reattachInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={handleReattachFileChange}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => reattachInputRef.current?.click()}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "#b06000",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Reattach PDF
+            </button>
+          </div>
+          {reattachError && (
+            <p style={{ margin: 0, color: "#dc2626", fontSize: "0.875rem" }}>
+              {reattachError}
+            </p>
+          )}
+        </div>
+      )}
       {jumpError && (
         <div
           role="alert"

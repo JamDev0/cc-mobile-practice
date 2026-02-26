@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { getSession } from "@/storage/indexeddb/sessionAdapter";
 import { getPdfBlob } from "@/storage/indexeddb/pdfBlobAdapter";
+import { reattachPdfBlob } from "@/features/session/service/sessionService";
 import {
   listMarkersBySession,
   putMarker,
@@ -33,6 +34,8 @@ export interface UseSolveSessionResult {
   highlightedMarkerId: string | null;
   activePage: number;
   error: string | null;
+  /** True when load completed but session does not exist. */
+  sessionNotFound: boolean;
   setPageCount: (n: number) => void;
   setActivePage: (n: number) => void;
   createPendingMarker: (pageNumber: number, xPct: number, yPct: number, anchorClientX: number, anchorClientY: number) => void;
@@ -49,6 +52,8 @@ export interface UseSolveSessionResult {
   setHighlightedMarkerId: (id: string | null) => void;
   existingQuestionNumbers: Set<number>;
   pendingAnchor: { x: number; y: number } | null;
+  /** E_PDF_BLOB_MISSING recovery: reattach PDF to session when blob missing. */
+  reattachPdf: (file: File) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function useSolveSession(sessionId: string | null): UseSolveSessionResult {
@@ -62,9 +67,12 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
   const [highlightedMarkerId, setHighlightedMarkerId] = useState<string | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [sessionNotFound, setSessionNotFound] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!sessionId) return;
+    setSessionNotFound(false);
+    setError(null);
     try {
       const db = await openDatabase();
       const s = await getSession(db, sessionId);
@@ -75,8 +83,10 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
       setPdfBlob(blob ?? null);
       setMarkers(deriveMarkerStatuses(m));
       setPageCountState(s?.pageCount ?? null);
+      setSessionNotFound(s == null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
+      setSessionNotFound(false);
     }
   }, [sessionId]);
 
@@ -266,6 +276,25 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     [sessionId, markers, editMarker]
   );
 
+  const reattachPdf = useCallback(
+    async (file: File): Promise<{ ok: boolean; error?: string }> => {
+      if (!sessionId) return { ok: false, error: "No session" };
+      const result = await reattachPdfBlob(sessionId, file);
+      if (result.ok) {
+        const db = await openDatabase();
+        const s = await getSession(db, sessionId);
+        const blob = await getPdfBlob(db, sessionId);
+        db.close();
+        setSession(s ?? null);
+        setPdfBlob(blob ?? null);
+      }
+      return result.ok
+        ? { ok: true }
+        : { ok: false, error: result.error };
+    },
+    [sessionId]
+  );
+
   return {
     session,
     pdfBlob,
@@ -276,6 +305,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     highlightedMarkerId,
     activePage,
     error,
+    sessionNotFound,
     setPageCount,
     setActivePage,
     createPendingMarker,
@@ -289,5 +319,6 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,
+    reattachPdf,
   };
 }

@@ -1,15 +1,38 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createSessionFromPdf } from "@/features/session/service/sessionService";
+import {
+  createSessionFromPdf,
+  listSessions,
+} from "@/features/session/service/sessionService";
+import type { Session } from "@/domain/models/types";
 
 export default function SessionsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+
+  const refreshSessions = useCallback(async () => {
+    setLoadingSessions(true);
+    setSessionsError(null);
+    const result = await listSessions();
+    setLoadingSessions(false);
+    if (result.ok) {
+      setSessions(result.sessions);
+    } else {
+      setSessionsError(result.error);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshSessions();
+  }, [refreshSessions]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,12 +44,13 @@ export default function SessionsPage() {
       setCreating(false);
       e.target.value = "";
       if (result.ok) {
+        await refreshSessions();
         router.push(`/sessions/${result.sessionId}`);
       } else {
         setError(result.error);
       }
     },
-    [router]
+    [router, refreshSessions]
   );
 
   return (
@@ -40,7 +64,7 @@ export default function SessionsPage() {
           marginTop: "1rem",
           display: "flex",
           flexDirection: "column",
-          gap: "0.5rem",
+          gap: "1rem",
         }}
       >
         <div>
@@ -70,6 +94,67 @@ export default function SessionsPage() {
         {error && (
           <p style={{ color: "#dc2626", fontSize: "0.875rem" }}>{error}</p>
         )}
+
+        <section>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+            Existing sessions
+          </h2>
+          {loadingSessions ? (
+            <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+              Loading sessions...
+            </p>
+          ) : sessionsError ? (
+            <p style={{ color: "#dc2626", fontSize: "0.875rem" }}>
+              {sessionsError}
+            </p>
+          ) : sessions.length === 0 ? (
+            <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+              No sessions yet. Create one from a PDF above.
+            </p>
+          ) : (
+            <ul
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              {sessions.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={`/sessions/${s.id}`}
+                    style={{
+                      display: "block",
+                      padding: "0.75rem 1rem",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      color: "#111827",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>{s.title}</span>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "0.75rem",
+                        color: "#6b7280",
+                        marginTop: "0.25rem",
+                      }}
+                    >
+                      {new Date(s.updatedAt).toLocaleDateString(undefined, {
+                        dateStyle: "medium",
+                      })}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <Link href="/" style={{ color: "#0070f3" }}>
           Back to Home
         </Link>
