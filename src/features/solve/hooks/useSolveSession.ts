@@ -243,7 +243,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
         const all = await listMarkersBySession(db, sessionId);
         db.close();
         setMarkers(deriveMarkerStatuses(all));
-        setEditMarker(updated);
+        setEditMarker(null);
         setWriteError(null);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to save marker";
