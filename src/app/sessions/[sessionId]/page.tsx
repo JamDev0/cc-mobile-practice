@@ -89,19 +89,34 @@ export default function SessionPage() {
         minHeight: "100vh",
         height: "100dvh",
         paddingBottom: "max(56px, calc(56px + env(safe-area-inset-bottom, 0px)))",
+        background: "var(--color-bg)",
       }}
     >
       <header
         style={{
           padding: "0.75rem 1rem",
-          borderBottom: "1px solid #eee",
+          borderBottom: `1px solid var(--color-border)`,
+          background: "var(--color-surface)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: "0.5rem",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: "1.25rem" }}>Session: {sessionId}</h1>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "1rem",
+            fontWeight: "var(--font-weight-heading)",
+            letterSpacing: "var(--letter-spacing-heading)",
+            color: "var(--color-text)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Session
+        </h1>
         <Link
           href="/sessions"
           data-testid="switch-session-link-header"
@@ -112,20 +127,30 @@ export default function SessionPage() {
             alignItems: "center",
             justifyContent: "center",
             padding: "0.5rem 0.75rem",
-            borderRadius: 6,
-            border: "1px solid #2563eb",
-            background: "white",
-            color: "#2563eb",
-            fontSize: "0.875rem",
-            fontWeight: 500,
+            borderRadius: "var(--radius-md)",
+            border: `1px solid var(--color-accent)`,
+            background: "var(--color-accent-soft)",
+            color: "var(--color-accent)",
+            fontSize: "0.8125rem",
+            fontWeight: 600,
             textDecoration: "none",
+            transition: "background 0.15s",
           }}
           aria-label="Switch session"
         >
-          Switch session
+          Switch
         </Link>
       </header>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: activeTab === "solve" ? 0 : "1rem" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          padding: activeTab === "solve" ? 0 : "1rem",
+          background: activeTab === "solve" ? "var(--color-bg)" : "var(--color-bg)",
+        }}
+      >
         <TabContent
           tabId={activeTab}
           sessionId={sessionId}

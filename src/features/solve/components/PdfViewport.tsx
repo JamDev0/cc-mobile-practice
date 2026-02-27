@@ -7,7 +7,6 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { tapToPct } from "@/domain/models/coordinates";
 import type { PendingMarker } from "../types";
 
-// Worker must match react-pdf's bundled pdfjs-dist; postinstall copies from react-pdf's node_modules
 if (typeof window !== "undefined") {
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 }
@@ -35,21 +34,13 @@ interface PdfViewportProps {
   activePage: number;
   onActivePageChange: (page: number) => void;
   highlightedMarkerId: string | null;
-  /** When set, scrolls this page into view (for jump-to-marker). */
   scrollToPageNumber: number | null;
-  /** Optional marker id to scroll into view when available. */
   scrollToMarkerId?: string | null;
-  /** Called when scroll attempt completes (success or retries exhausted). Per spec 09 §4.3. */
   onScrollAttempted?: (success: boolean) => void;
-  /** When true, disables scrolling (e.g. while radial picker gesture is active). */
   disableScroll?: boolean;
 }
 
-/** Per spec 06 §4.3.3: fallback to fully rendered page list for V1 scroll continuity.
- * Windowing blocked natural scrolling past early pages. */
 const RENDER_WINDOW_FALLBACK = 2;
-
-/** Per spec 09 §4.3: bounded retries when page node not yet mounted. */
 const SCROLL_RETRY_MAX = 60;
 const LONG_PRESS_MS = 150;
 const LONG_PRESS_MOVE_THRESHOLD_PX = 10;
@@ -130,7 +121,6 @@ export function PdfViewport({
           onScrollAttempted?.(true);
           return;
         }
-        // Marker target requested: keep retrying until marker element mounts.
       }
       if (attempts >= SCROLL_RETRY_MAX) {
         onScrollAttempted?.(false);
@@ -193,7 +183,6 @@ export function PdfViewport({
           state.pointerId,
           pointerType
         );
-        // Do not clear the ref here; we still want to ignore post-trigger move-cancel logic.
       }, LONG_PRESS_MS);
 
       longPressRef.current = {
@@ -213,7 +202,6 @@ export function PdfViewport({
 
   const handlePageTouchStart = useCallback(
     (pageNumber: number) => (e: React.TouchEvent<HTMLDivElement>) => {
-      // Prefer pointer events on browsers that support them.
       if (typeof window !== "undefined" && "PointerEvent" in window) return;
       if (longPressRef.current) return;
       if (e.touches.length >= 2) return;
@@ -351,6 +339,7 @@ export function PdfViewport({
           alignItems: "center",
           justifyContent: "center",
           padding: "2rem",
+          color: "var(--color-text-muted)",
         }}
       >
         <p>No PDF loaded.</p>
@@ -384,9 +373,9 @@ export function PdfViewport({
         padding: "1rem",
         touchAction: disableScroll ? "none" : "pan-x pan-y",
         overscrollBehavior: "none",
+        background: "var(--color-bg)",
       }}
       onScroll={() => {
-        // If user scrolls normally, cancel any pending long-press detection.
         if (longPressRef.current && !longPressRef.current.triggered) {
           cancelLongPress();
         }
@@ -418,12 +407,12 @@ export function PdfViewport({
           onPageCountKnown(numPages);
         }}
         loading={
-          <div style={{ padding: "2rem" }}>
+          <div style={{ padding: "2rem", color: "var(--color-text-muted)" }}>
             <p>Loading PDF...</p>
           </div>
         }
         error={
-          <div style={{ padding: "2rem", color: "red" }}>
+          <div style={{ padding: "2rem", color: "var(--color-danger)" }}>
             <p>Failed to load PDF.</p>
           </div>
         }
@@ -434,6 +423,9 @@ export function PdfViewport({
             style={{
               position: "relative",
               marginBottom: "1rem",
+              borderRadius: "var(--radius-md)",
+              overflow: "hidden",
+              boxShadow: "var(--shadow-md)",
             }}
             data-page-number={pageNum}
             ref={(el) => {
@@ -443,7 +435,6 @@ export function PdfViewport({
             <div
               data-testid={`pdf-page-hitbox-${pageNum}`}
               onContextMenu={(e) => {
-                // Avoid long-press context menu interfering with the gesture.
                 e.preventDefault();
               }}
               onPointerDown={handlePagePointerDown(pageNum)}

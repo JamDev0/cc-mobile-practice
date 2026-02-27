@@ -22,15 +22,10 @@ const OUTER_RADIUS = 72;
 const INNER_RADIUS = 24;
 const SLICE_COUNT = 6;
 const SLICE_ANGLE = (2 * Math.PI) / SLICE_COUNT;
-/**
- * Keep radial gesture layer above solve content but below fixed tab bar.
- * Tab bar uses z-index 100 and must keep pointer priority (spec 07).
- */
 const RADIAL_OVERLAY_Z_INDEX = 90;
 
 const TOKENS: AnswerToken[] = [...ANSWER_TOKENS];
 
-/** Per spec 11 §5: exactly one of onSelect or onCancel per gesture. */
 function settleOnce(
   settledRef: { current: boolean },
   fn: () => void
@@ -51,7 +46,6 @@ export function RadialPickerPortal({
   const [previewToken, setPreviewToken] = useState<AnswerToken | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  /** Track if this gesture has already fired onSelect or onCancel. */
   const settledRef = useRef(false);
   const activePointerRef = useRef<number | null>(null);
 
@@ -296,7 +290,11 @@ export function RadialPickerPortal({
             <path
               key={token}
               d={path}
-              fill={previewToken === token ? "rgba(59, 130, 246, 0.9)" : "rgba(0, 0, 0, 0.6)"}
+              fill={
+                previewToken === token
+                  ? "var(--color-radial-active)"
+                  : "var(--color-radial-bg)"
+              }
               style={{ cursor: "pointer" }}
             />
           ))}
@@ -310,8 +308,8 @@ export function RadialPickerPortal({
             width: INNER_RADIUS * 2,
             height: INNER_RADIUS * 2,
             borderRadius: "50%",
-            background: "#1f2937",
-            color: "white",
+            background: "var(--color-radial-center)",
+            color: "var(--color-radial-text)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -319,6 +317,7 @@ export function RadialPickerPortal({
             fontWeight: 600,
             userSelect: "none",
             WebkitUserSelect: "none",
+            border: "1px solid var(--color-border)",
           }}
         >
           {questionNumber}
@@ -337,7 +336,7 @@ export function RadialPickerPortal({
                 top: ly - 10,
                 width: 16,
                 textAlign: "center",
-                color: "white",
+                color: "var(--color-radial-text)",
                 fontSize: 12,
                 fontWeight: 600,
                 pointerEvents: "none",

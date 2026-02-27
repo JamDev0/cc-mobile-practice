@@ -33,7 +33,7 @@ export function EditGabaritoModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -45,20 +45,36 @@ export function EditGabaritoModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 320,
           width: "100%",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
-        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.125rem" }}>
-          Edit gabarito — Q{questionNumber}
+        <h3
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "1.125rem",
+            fontWeight: "var(--font-weight-heading)",
+            letterSpacing: "var(--letter-spacing-heading)",
+            color: "var(--color-text)",
+          }}
+        >
+          Edit gabarito \u2014 Q{questionNumber}
         </h3>
         <div style={{ marginBottom: "1rem" }}>
           <label
             htmlFor="gabarito-token"
-            style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+            style={{
+              display: "block",
+              marginBottom: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
           >
             Answer
           </label>
@@ -68,9 +84,11 @@ export function EditGabaritoModal({
             onChange={(e) => setAnswerToken(e.target.value as AnswerToken)}
             style={{
               width: "100%",
-              padding: "0.5rem",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
+              padding: "0.625rem 0.75rem",
+              borderRadius: "var(--radius-md)",
+              border: `1px solid var(--color-input-border)`,
+              background: "var(--color-input-bg)",
+              color: "var(--color-input-text)",
               fontSize: "1rem",
             }}
           >
@@ -98,10 +116,14 @@ export function EditGabaritoModal({
               }}
               style={{
                 padding: "0.5rem 1rem",
-                borderRadius: 4,
-                background: "#dc2626",
+                borderRadius: "var(--radius-md)",
+                background: "var(--color-danger)",
                 color: "white",
                 border: "none",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                minHeight: 40,
               }}
             >
               Delete
@@ -112,9 +134,13 @@ export function EditGabaritoModal({
             onClick={onClose}
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 4,
-              background: "white",
+              border: `1px solid var(--color-border)`,
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              minHeight: 40,
             }}
           >
             Cancel
@@ -124,10 +150,14 @@ export function EditGabaritoModal({
             onClick={handleSave}
             style={{
               padding: "0.5rem 1rem",
-              borderRadius: 4,
-              background: "#2563eb",
-              color: "white",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-accent)",
+              color: "var(--color-accent-text)",
               border: "none",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              minHeight: 40,
             }}
           >
             Save

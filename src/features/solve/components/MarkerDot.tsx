@@ -165,10 +165,10 @@ export function MarkerDot({
         minHeight: 24,
         borderRadius: "50%",
         background: isConflict
-          ? "#f59e0b"
+          ? "var(--color-marker-conflict)"
           : isHighlighted
-            ? "#3b82f6"
-            : "#22c55e",
+            ? "var(--color-marker-highlight)"
+            : "var(--color-marker-valid)",
         color: "white",
         display: "flex",
         alignItems: "center",
@@ -177,7 +177,9 @@ export function MarkerDot({
         fontWeight: 600,
         cursor: "grab",
         pointerEvents: "auto",
-        boxShadow: isHighlighted ? "0 0 0 3px rgba(59, 130, 246, 0.5)" : undefined,
+        boxShadow: isHighlighted
+          ? "0 0 0 3px rgba(59, 130, 246, 0.5)"
+          : "var(--shadow-sm)",
         transition: dragPos ? "none" : "box-shadow 0.2s",
         touchAction: "none",
       }}
