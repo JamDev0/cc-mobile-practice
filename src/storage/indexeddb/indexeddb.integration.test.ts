@@ -150,7 +150,6 @@ describe("IndexedDB create->reload->read", () => {
     }
   });
 
-<<<<<<< HEAD
   it("deleteSessionCascade removes session, PDF blob, markers, gabarito", async () => {
     const session = makeSession();
     const marker = makeMarker();
