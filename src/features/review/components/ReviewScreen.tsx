@@ -180,7 +180,7 @@ function DeleteConflictPickerModal({
                 cursor: "pointer",
               }}
             >
-              Page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
+              Marker on page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
             </button>
           ))}
         </div>
@@ -372,7 +372,7 @@ function ConflictPickerModal({
                 cursor: "pointer",
               }}
             >
-              Page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
+              Marker on page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
             </button>
           ))}
         </div>
