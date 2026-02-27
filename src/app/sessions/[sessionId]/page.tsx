@@ -1,12 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { TabBar } from "@/shared/ui/TabBar";
+import { useTheme } from "@/shared/theme/ThemeProvider";
 import { SessionTabPanel } from "@/features/session/components/SessionTabPanel";
+import { InkSessionShell } from "@/variants/ink";
+import { TerraSessionShell } from "@/variants/terra";
+import { FrostSessionShell } from "@/variants/frost";
+import { NoirSessionShell } from "@/variants/noir";
+import { CitrusSessionShell } from "@/variants/citrus";
 import type { JumpRequest } from "@/features/solve/types";
+import type { TabId } from "@/variants/types";
 
 const SolveScreen = dynamic(
   () =>
@@ -23,14 +28,6 @@ const ReviewScreen = dynamic(
     })),
   { ssr: false }
 );
-
-type TabId = "solve" | "review" | "session";
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: "solve", label: "Solve" },
-  { id: "review", label: "Review" },
-  { id: "session", label: "Session" },
-];
 
 function TabContent({
   tabId,
@@ -71,6 +68,7 @@ function TabContent({
 export default function SessionPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabId>("solve");
   const [pendingJumpRequest, setPendingJumpRequest] =
     useState<JumpRequest | null>(null);
@@ -81,89 +79,33 @@ export default function SessionPage() {
     }
   }, [pendingJumpRequest, sessionId]);
 
-  return (
-    <main
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        height: "100dvh",
-        paddingBottom: "max(56px, calc(56px + env(safe-area-inset-bottom, 0px)))",
-        background: "var(--color-bg)",
-      }}
-    >
-      <header
-        style={{
-          padding: "0.75rem 1rem",
-          borderBottom: `1px solid var(--color-border)`,
-          background: "var(--color-surface)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "0.5rem",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "1rem",
-            fontWeight: "var(--font-weight-heading)",
-            letterSpacing: "var(--letter-spacing-heading)",
-            color: "var(--color-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Session
-        </h1>
-        <Link
-          href="/sessions"
-          data-testid="switch-session-link-header"
-          style={{
-            minWidth: 44,
-            minHeight: 44,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0.5rem 0.75rem",
-            borderRadius: "var(--radius-md)",
-            border: `1px solid var(--color-accent)`,
-            background: "var(--color-accent-soft)",
-            color: "var(--color-accent)",
-            fontSize: "0.8125rem",
-            fontWeight: 600,
-            textDecoration: "none",
-            transition: "background 0.15s",
-          }}
-          aria-label="Switch session"
-        >
-          Switch
-        </Link>
-      </header>
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-          padding: activeTab === "solve" ? 0 : "1rem",
-          background: activeTab === "solve" ? "var(--color-bg)" : "var(--color-bg)",
-        }}
-      >
-        <TabContent
-          tabId={activeTab}
-          sessionId={sessionId}
-          jumpRequest={pendingJumpRequest}
-          onJumpRequestConsumed={() => setPendingJumpRequest(null)}
-          onRequestJump={setPendingJumpRequest}
-        />
-      </div>
-      <TabBar
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabChange={(tabId) => setActiveTab(tabId)}
-      />
-    </main>
+  const tabContent = (
+    <TabContent
+      tabId={activeTab}
+      sessionId={sessionId}
+      jumpRequest={pendingJumpRequest}
+      onJumpRequestConsumed={() => setPendingJumpRequest(null)}
+      onRequestJump={setPendingJumpRequest}
+    />
   );
+
+  const shellProps = {
+    sessionId,
+    activeTab,
+    onTabChange: setActiveTab,
+    children: tabContent,
+  };
+
+  switch (theme) {
+    case "ink":
+      return <InkSessionShell {...shellProps} />;
+    case "terra":
+      return <TerraSessionShell {...shellProps} />;
+    case "frost":
+      return <FrostSessionShell {...shellProps} />;
+    case "noir":
+      return <NoirSessionShell {...shellProps} />;
+    case "citrus":
+      return <CitrusSessionShell {...shellProps} />;
+  }
 }
