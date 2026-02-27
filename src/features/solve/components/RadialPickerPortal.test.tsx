@@ -172,4 +172,18 @@ describe("RadialPickerPortal - RPS (Spec 11 press-slide-release)", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  it("NPI: Radial overlay stays below tab bar stacking", () => {
+    render(
+      <RadialPickerPortal
+        anchorX={anchorX}
+        anchorY={anchorY}
+        questionNumber={1}
+        onSelect={onSelect}
+        onCancel={onCancel}
+      />
+    );
+    const overlay = screen.getByTestId("radial-picker-overlay");
+    expect(overlay).toHaveStyle({ zIndex: "90" });
+  });
 });

@@ -16,6 +16,11 @@ const OUTER_RADIUS = 72;
 const INNER_RADIUS = 24;
 const SLICE_COUNT = 6;
 const SLICE_ANGLE = (2 * Math.PI) / SLICE_COUNT;
+/**
+ * Keep radial gesture layer above solve content but below fixed tab bar.
+ * Tab bar uses z-index 100 and must keep pointer priority (spec 07).
+ */
+const RADIAL_OVERLAY_Z_INDEX = 90;
 
 const TOKENS: AnswerToken[] = [...ANSWER_TOKENS];
 
@@ -163,7 +168,7 @@ export function RadialPickerPortal({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 1000,
+        zIndex: RADIAL_OVERLAY_Z_INDEX,
         pointerEvents: "auto",
       }}
       onPointerDown={handlePointerDown}
