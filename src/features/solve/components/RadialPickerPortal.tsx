@@ -250,6 +250,9 @@ export function RadialPickerPortal({
         userSelect: "none",
         WebkitUserSelect: "none",
       }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

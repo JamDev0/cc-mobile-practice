@@ -412,6 +412,10 @@ export function PdfViewport({
           >
             <div
               data-testid={`pdf-page-hitbox-${pageNum}`}
+              onContextMenu={(e) => {
+                // Avoid long-press context menu interfering with the gesture.
+                e.preventDefault();
+              }}
               onPointerDown={handlePagePointerDown(pageNum)}
               onPointerMove={handlePagePointerMove(pageNum)}
               onPointerUp={handlePagePointerUpOrCancel(pageNum)}
