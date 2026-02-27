@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PdfViewport } from "./PdfViewport";
 import { MarkerOverlayLayer } from "./MarkerOverlayLayer";
@@ -89,7 +89,6 @@ export function SolveScreen({
       !session
     )
       return;
-    // Session load includes markers; avoid consuming before load completes
     const marker = markers.find((m) => m.id === jumpRequest.markerId);
     if (!marker) {
       setJumpError("Marker not found");
@@ -105,7 +104,6 @@ export function SolveScreen({
     if (jumpRequest.openEditMarkerId && marker.id === jumpRequest.openEditMarkerId) {
       openEditMarker(marker);
     }
-    // Per spec 09 §4.3: consume only after scroll attempt (handled in onScrollAttempted)
 
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
     highlightTimeoutRef.current = setTimeout(() => {
@@ -238,9 +236,16 @@ export function SolveScreen({
 
   if (error) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p style={{ color: "red" }}>{error}</p>
-        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p style={{ color: "var(--color-danger)", marginBottom: "0.75rem" }}>{error}</p>
+        <Link
+          href="/sessions"
+          style={{
+            color: "var(--color-accent)",
+            textDecoration: "none",
+            fontWeight: 500,
+          }}
+        >
           Back to Sessions
         </Link>
       </div>
@@ -249,9 +254,18 @@ export function SolveScreen({
 
   if (sessionNotFound) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>Session not found.</p>
-        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p style={{ color: "var(--color-text-secondary)", marginBottom: "0.75rem" }}>
+          Session not found.
+        </p>
+        <Link
+          href="/sessions"
+          style={{
+            color: "var(--color-accent)",
+            textDecoration: "none",
+            fontWeight: 500,
+          }}
+        >
           Back to Sessions
         </Link>
       </div>
@@ -260,8 +274,14 @@ export function SolveScreen({
 
   if (!session) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>Loading session...</p>
+      <div
+        style={{
+          padding: "2rem",
+          textAlign: "center",
+          color: "var(--color-text-muted)",
+        }}
+      >
+        Loading session...
       </div>
     );
   }
@@ -282,14 +302,14 @@ export function SolveScreen({
           role="alert"
           style={{
             padding: "1rem",
-            background: "#fef7e0",
-            borderBottom: "1px solid #f9a825",
+            background: "var(--color-warning-bg)",
+            borderBottom: `1px solid var(--color-warning-border)`,
             display: "flex",
             flexDirection: "column",
             gap: "0.5rem",
           }}
         >
-          <p style={{ margin: 0, fontWeight: 500, color: "#b06000" }}>
+          <p style={{ margin: 0, fontWeight: 600, color: "var(--color-warning-text)" }}>
             PDF file is missing. Please reattach it to continue.
           </p>
           <div>
@@ -305,18 +325,20 @@ export function SolveScreen({
               onClick={() => reattachInputRef.current?.click()}
               style={{
                 padding: "0.5rem 1rem",
-                background: "#b06000",
-                color: "white",
+                background: "var(--color-accent)",
+                color: "var(--color-accent-text)",
                 border: "none",
-                borderRadius: "4px",
+                borderRadius: "var(--radius-md)",
                 cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "0.875rem",
               }}
             >
               Reattach PDF
             </button>
           </div>
           {reattachError && (
-            <p style={{ margin: 0, color: "#dc2626", fontSize: "0.875rem" }}>
+            <p style={{ margin: 0, color: "var(--color-danger)", fontSize: "0.875rem" }}>
               {reattachError}
             </p>
           )}
@@ -327,8 +349,8 @@ export function SolveScreen({
           role="alert"
           style={{
             padding: "0.5rem 1rem",
-            background: "#fee2e2",
-            color: "#991b1b",
+            background: "var(--color-danger-soft)",
+            color: "var(--color-danger)",
             fontSize: "0.875rem",
             display: "flex",
             alignItems: "center",
@@ -360,8 +382,8 @@ export function SolveScreen({
           role="alert"
           style={{
             padding: "0.5rem 1rem",
-            background: "#fef3c7",
-            color: "#92400e",
+            background: "var(--color-warning-bg)",
+            color: "var(--color-warning-text)",
             fontSize: "0.875rem",
           }}
         >

@@ -10,11 +10,19 @@ import type { JumpRequest } from "@/features/solve/types";
 import type { Marker, ReviewRow, RowStatus } from "@/domain/models/types";
 
 const ROW_STATUS_LABELS: Record<RowStatus, string> = {
-  correct: "✓",
-  wrong: "✗",
-  blank: "—",
+  correct: "\u2713",
+  wrong: "\u2717",
+  blank: "\u2014",
   conflict: "!",
   not_gradable: "?",
+};
+
+const STATUS_VAR_MAP: Record<RowStatus, { bg: string; fg: string }> = {
+  correct: { bg: "var(--color-status-correct-bg)", fg: "var(--color-status-correct-fg)" },
+  wrong: { bg: "var(--color-status-wrong-bg)", fg: "var(--color-status-wrong-fg)" },
+  blank: { bg: "var(--color-status-blank-bg)", fg: "var(--color-status-blank-fg)" },
+  conflict: { bg: "var(--color-status-conflict-bg)", fg: "var(--color-status-conflict-fg)" },
+  not_gradable: { bg: "var(--color-status-notgradable-bg)", fg: "var(--color-status-notgradable-fg)" },
 };
 
 interface CommentTextareaProps {
@@ -48,11 +56,14 @@ function CommentTextarea({
       style={{
         width: "100%",
         boxSizing: "border-box",
-        padding: "0.5rem 0.75rem",
-        border: "1px solid #e5e7eb",
-        borderRadius: 6,
+        padding: "0.625rem 0.75rem",
+        border: `1px solid var(--color-input-border)`,
+        borderRadius: "var(--radius-md)",
+        background: "var(--color-input-bg)",
+        color: "var(--color-input-text)",
         fontSize: "0.875rem",
         resize: "vertical",
+        fontFamily: "inherit",
       }}
     />
   );
@@ -60,14 +71,7 @@ function CommentTextarea({
 
 function StatusBadge({ status }: { status: RowStatus }) {
   const label = ROW_STATUS_LABELS[status];
-  const colors: Record<RowStatus, { bg: string; fg: string }> = {
-    correct: { bg: "#d1fae5", fg: "#065f46" },
-    wrong: { bg: "#fee2e2", fg: "#991b1b" },
-    blank: { bg: "#f3f4f6", fg: "#374151" },
-    conflict: { bg: "#fef3c7", fg: "#92400e" },
-    not_gradable: { bg: "#e5e7eb", fg: "#6b7280" },
-  };
-  const { bg, fg } = colors[status];
+  const vars = STATUS_VAR_MAP[status];
   return (
     <span
       style={{
@@ -75,12 +79,13 @@ function StatusBadge({ status }: { status: RowStatus }) {
         alignItems: "center",
         justifyContent: "center",
         minWidth: 24,
-        padding: "0.125rem 0.375rem",
-        borderRadius: 4,
+        padding: "0.125rem 0.5rem",
+        borderRadius: "var(--radius-sm)",
         fontSize: "0.75rem",
-        fontWeight: 600,
-        background: bg,
-        color: fg,
+        fontWeight: 700,
+        background: vars.bg,
+        color: vars.fg,
+        fontFamily: "var(--font-family-mono)",
       }}
       title={status}
     >
@@ -115,7 +120,7 @@ function DeleteConflictPickerModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -127,17 +132,32 @@ function DeleteConflictPickerModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 320,
           width: "100%",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
-        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+        <h3
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "1rem",
+            fontWeight: "var(--font-weight-heading)",
+            color: "var(--color-text)",
+          }}
+        >
           Question {questionNumber} has multiple markers
         </h3>
-        <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
+        <p
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "0.875rem",
+            color: "var(--color-text-secondary)",
+          }}
+        >
           Choose which marker to delete:
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -152,13 +172,15 @@ function DeleteConflictPickerModal({
               style={{
                 padding: "0.75rem 1rem",
                 textAlign: "left",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                background: "white",
-                fontSize: "0.9375rem",
+                borderRadius: "var(--radius-md)",
+                border: `1px solid var(--color-border)`,
+                background: "var(--color-surface-alt)",
+                color: "var(--color-text)",
+                fontSize: "0.875rem",
+                cursor: "pointer",
               }}
             >
-              Marker on page {m.pageNumber} — {m.answerToken ?? "—"}
+              Marker on page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
             </button>
           ))}
         </div>
@@ -168,9 +190,12 @@ function DeleteConflictPickerModal({
           style={{
             marginTop: "1rem",
             padding: "0.5rem 1rem",
-            border: "1px solid #d1d5db",
-            borderRadius: 4,
-            background: "white",
+            border: `1px solid var(--color-border)`,
+            borderRadius: "var(--radius-md)",
+            background: "var(--color-surface)",
+            color: "var(--color-text)",
+            fontSize: "0.875rem",
+            cursor: "pointer",
           }}
         >
           Cancel
@@ -196,7 +221,7 @@ function DeleteConfirmModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -208,17 +233,33 @@ function DeleteConfirmModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 320,
           width: "100%",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
-        <p style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+        <p
+          style={{
+            margin: "0 0 0.5rem 0",
+            fontSize: "1rem",
+            fontWeight: "var(--font-weight-heading)",
+            color: "var(--color-text)",
+          }}
+        >
           Delete this user answer?
         </p>
-        <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
+        <p
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "0.875rem",
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.5,
+          }}
+        >
           Question {questionNumber} will show as missing user answer.
         </p>
         <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
@@ -227,10 +268,12 @@ function DeleteConfirmModal({
             onClick={onCancel}
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              background: "white",
+              border: `1px solid var(--color-border)`,
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
               fontSize: "0.875rem",
+              cursor: "pointer",
             }}
           >
             Cancel
@@ -240,11 +283,13 @@ function DeleteConfirmModal({
             onClick={onConfirm}
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #dc2626",
-              borderRadius: 6,
-              background: "#dc2626",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-danger)",
               color: "white",
               fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
             }}
           >
             Delete
@@ -267,7 +312,7 @@ function ConflictPickerModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -279,17 +324,32 @@ function ConflictPickerModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 320,
           width: "100%",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
-        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+        <h3
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "1rem",
+            fontWeight: "var(--font-weight-heading)",
+            color: "var(--color-text)",
+          }}
+        >
           Question {questionNumber} has multiple markers
         </h3>
-        <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
+        <p
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "0.875rem",
+            color: "var(--color-text-secondary)",
+          }}
+        >
           Choose which marker to open:
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -304,13 +364,15 @@ function ConflictPickerModal({
               style={{
                 padding: "0.75rem 1rem",
                 textAlign: "left",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                background: "white",
-                fontSize: "0.9375rem",
+                borderRadius: "var(--radius-md)",
+                border: `1px solid var(--color-border)`,
+                background: "var(--color-surface-alt)",
+                color: "var(--color-text)",
+                fontSize: "0.875rem",
+                cursor: "pointer",
               }}
             >
-              Marker on page {m.pageNumber} — {m.answerToken ?? "—"}
+              Marker on page {m.pageNumber} \u2014 {m.answerToken ?? "\u2014"}
             </button>
           ))}
         </div>
@@ -320,9 +382,12 @@ function ConflictPickerModal({
           style={{
             marginTop: "1rem",
             padding: "0.5rem 1rem",
-            border: "1px solid #d1d5db",
-            borderRadius: 4,
-            background: "white",
+            border: `1px solid var(--color-border)`,
+            borderRadius: "var(--radius-md)",
+            background: "var(--color-surface)",
+            color: "var(--color-text)",
+            fontSize: "0.875rem",
+            cursor: "pointer",
           }}
         >
           Cancel
@@ -459,9 +524,12 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
 
   if (error) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p style={{ color: "red" }}>{error}</p>
-        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p style={{ color: "var(--color-danger)", marginBottom: "0.75rem" }}>{error}</p>
+        <Link
+          href="/sessions"
+          style={{ color: "var(--color-accent)", textDecoration: "none", fontWeight: 500 }}
+        >
           Back to Sessions
         </Link>
       </div>
@@ -470,9 +538,14 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
 
   if (sessionNotFound) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>Session not found.</p>
-        <Link href="/sessions" style={{ color: "#0070f3", marginTop: "0.5rem", display: "inline-block" }}>
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p style={{ color: "var(--color-text-secondary)", marginBottom: "0.75rem" }}>
+          Session not found.
+        </p>
+        <Link
+          href="/sessions"
+          style={{ color: "var(--color-accent)", textDecoration: "none", fontWeight: 500 }}
+        >
           Back to Sessions
         </Link>
       </div>
@@ -481,16 +554,16 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
 
   if (!session) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>Loading session...</p>
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-muted)" }}>
+        Loading session...
       </div>
     );
   }
 
   if (!snapshot) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>Loading review...</p>
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-muted)" }}>
+        Loading review...
       </div>
     );
   }
@@ -505,7 +578,7 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
   const accuracyLabel =
     snapshot.accuracy != null
       ? `${(snapshot.accuracy * 100).toFixed(0)}%`
-      : "—";
+      : "\u2014";
 
   return (
     <div
@@ -522,8 +595,8 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           role="alert"
           style={{
             padding: "0.5rem 1rem",
-            background: "#fee2e2",
-            color: "#991b1b",
+            background: "var(--color-danger-soft)",
+            color: "var(--color-danger)",
             fontSize: "0.875rem",
             display: "flex",
             alignItems: "center",
@@ -553,7 +626,8 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
       <div
         style={{
           padding: "1rem",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: `1px solid var(--color-border)`,
+          background: "var(--color-surface)",
           display: "flex",
           flexWrap: "wrap",
           gap: "0.75rem",
@@ -564,29 +638,40 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           type="button"
           onClick={() => setShowImportModal(true)}
           style={{
-            padding: "0.375rem 0.75rem",
-            borderRadius: 6,
-            border: "1px solid #2563eb",
-            background: "white",
-            color: "#2563eb",
-            fontSize: "0.875rem",
-            fontWeight: 500,
+            padding: "0.5rem 0.875rem",
+            borderRadius: "var(--radius-md)",
+            border: `1px solid var(--color-accent)`,
+            background: "var(--color-accent-soft)",
+            color: "var(--color-accent)",
+            fontSize: "0.8125rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            minHeight: 36,
           }}
         >
           Import gabarito
         </button>
-        <span style={{ fontWeight: 600 }}>Score: {accuracyLabel}</span>
-        <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+        <span
+          style={{
+            fontWeight: "var(--font-weight-heading)",
+            fontSize: "1.125rem",
+            fontFamily: "var(--font-family-mono)",
+            color: "var(--color-text)",
+          }}
+        >
+          {accuracyLabel}
+        </span>
+        <span style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)" }}>
           {snapshot.correctCount} correct · {snapshot.wrongCount} wrong
           {snapshot.blankCount > 0 && ` · ${snapshot.blankCount} blank`}
         </span>
         {snapshot.conflictExcludedCount > 0 && (
-          <span style={{ fontSize: "0.875rem", color: "#92400e" }}>
+          <span style={{ fontSize: "0.8125rem", color: "var(--color-status-conflict-fg)" }}>
             {snapshot.conflictExcludedCount} conflict
           </span>
         )}
         {snapshot.notGradableCount > 0 && (
-          <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+          <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
             {snapshot.notGradableCount} not gradable
           </span>
         )}
@@ -596,13 +681,14 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
         <div
           style={{
             padding: "0.5rem 1rem",
-            background: "#f9fafb",
-            borderBottom: "1px solid #e5e7eb",
-            fontSize: "0.8125rem",
-            color: "#6b7280",
+            background: "var(--color-surface-alt)",
+            borderBottom: `1px solid var(--color-border)`,
+            fontSize: "0.75rem",
+            color: "var(--color-text-muted)",
             display: "flex",
             flexWrap: "wrap",
             gap: "1rem",
+            fontFamily: "var(--font-family-mono)",
           }}
         >
           {missingUserCount > 0 && (
@@ -625,16 +711,20 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            fontSize: "0.9375rem",
+            fontSize: "0.875rem",
           }}
         >
           <thead>
-            <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+            <tr style={{ borderBottom: `1px solid var(--color-border)` }}>
               <th
                 style={{
                   padding: "0.75rem 1rem",
                   textAlign: "left",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
                 #
@@ -644,6 +734,10 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                   padding: "0.75rem 1rem",
                   textAlign: "left",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
                 You
@@ -653,6 +747,10 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                   padding: "0.75rem 1rem",
                   textAlign: "left",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
                 Key
@@ -662,6 +760,10 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                   padding: "0.75rem 1rem",
                   textAlign: "center",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
                 Status
@@ -672,32 +774,35 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                   width: 52,
                   textAlign: "center",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
-                Delete
+                Del
               </th>
               <th
                 style={{
                   padding: "0.75rem 1rem",
-                  width: 80,
+                  width: 56,
                   textAlign: "center",
                   fontWeight: 600,
+                  color: "var(--color-text-muted)",
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                 }}
               >
-                Comment
+                Note
               </th>
             </tr>
           </thead>
           <tbody>
             {snapshot.rows.map((row) => (
               <React.Fragment key={row.questionNumber}>
-              <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    minWidth: 48,
-                  }}
-                >
+              <tr style={{ borderBottom: `1px solid var(--color-border)` }}>
+                <td style={{ padding: "0.75rem 1rem", minWidth: 48 }}>
                   <button
                     type="button"
                     onClick={() => handleQuestionNumberTap(row)}
@@ -707,20 +812,18 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                       border: "none",
                       cursor: row.userMarkers.length > 0 ? "pointer" : "default",
                       padding: 0,
-                      fontWeight: 600,
-                      color: row.userMarkers.length > 0 ? "#2563eb" : "#9ca3af",
+                      fontWeight: 700,
+                      color: row.userMarkers.length > 0
+                        ? "var(--color-accent)"
+                        : "var(--color-text-muted)",
                       fontSize: "inherit",
+                      fontFamily: "var(--font-family-mono)",
                     }}
                   >
                     {row.questionNumber}
                   </button>
                 </td>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    minWidth: 48,
-                  }}
-                >
+                <td style={{ padding: "0.75rem 1rem", minWidth: 48 }}>
                   <button
                     type="button"
                     onClick={() => handleUserAnswerTap(row)}
@@ -735,17 +838,15 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                       display: "inline-flex",
                       alignItems: "center",
                       fontSize: "inherit",
+                      color: "var(--color-text)",
+                      fontFamily: "var(--font-family-mono)",
+                      fontWeight: 600,
                     }}
                   >
-                    {row.effectiveUserToken ?? "—"}
+                    {row.effectiveUserToken ?? "\u2014"}
                   </button>
                 </td>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    minWidth: 48,
-                  }}
-                >
+                <td style={{ padding: "0.75rem 1rem", minWidth: 48 }}>
                   <button
                     type="button"
                     onClick={() =>
@@ -762,26 +863,18 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                       display: "inline-flex",
                       alignItems: "center",
                       fontSize: "inherit",
+                      color: "var(--color-text)",
+                      fontFamily: "var(--font-family-mono)",
+                      fontWeight: 600,
                     }}
                   >
-                    {row.gabaritoToken ?? "—"}
+                    {row.gabaritoToken ?? "\u2014"}
                   </button>
                 </td>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    textAlign: "center",
-                  }}
-                >
+                <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
                   <StatusBadge status={row.status} />
                 </td>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
+                <td style={{ padding: "0.75rem 1rem", textAlign: "center", verticalAlign: "middle" }}>
                   {row.userMarkers.length > 0 ? (
                     <button
                       type="button"
@@ -798,23 +891,20 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "1rem",
-                        color: "#dc2626",
+                        fontSize: "0.75rem",
+                        color: "var(--color-danger)",
+                        fontWeight: 600,
                       }}
                     >
-                      Delete
+                      Del
                     </button>
                   ) : (
-                    <span style={{ color: "#9ca3af", fontSize: "0.75rem" }}>—</span>
+                    <span style={{ color: "var(--color-text-muted)", fontSize: "0.75rem" }}>
+                      \u2014
+                    </span>
                   )}
                 </td>
-                <td
-                  style={{
-                    padding: "0.75rem 1rem",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
+                <td style={{ padding: "0.75rem 1rem", textAlign: "center", verticalAlign: "middle" }}>
                   <button
                     type="button"
                     onClick={() =>
@@ -840,23 +930,25 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: "0.875rem",
-                      color: "#6b7280",
+                      color: getCommentByQuestion(row.questionNumber)
+                        ? "var(--color-accent)"
+                        : "var(--color-text-muted)",
                     }}
                   >
-                    {getCommentByQuestion(row.questionNumber) ? "✎" : "+"}
+                    {getCommentByQuestion(row.questionNumber) ? "\u270E" : "+"}
                   </button>
                 </td>
               </tr>
               {expandedCommentRow === row.questionNumber && (
                 <tr
                   key={`comment-${row.questionNumber}`}
-                  style={{ borderBottom: "1px solid #f3f4f6" }}
+                  style={{ borderBottom: `1px solid var(--color-border)` }}
                 >
                   <td
                     colSpan={6}
                     style={{
                       padding: "0 1rem 0.75rem 1rem",
-                      background: "#f9fafb",
+                      background: "var(--color-surface-alt)",
                       verticalAlign: "top",
                     }}
                   >

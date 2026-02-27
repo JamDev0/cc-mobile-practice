@@ -10,11 +10,6 @@ import {
 } from "@/storage/indexeddb/sessionAdapter";
 import type { Session } from "@/domain/models/types";
 
-/**
- * Session tab panel per specs/00-system-contract-ralph-spec.md §9.
- * Displays session metadata and mandatory data loss warning.
- */
-
 export interface SessionTabPanelProps {
   sessionId: string;
 }
@@ -45,7 +40,7 @@ function DeleteSessionConfirmModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -57,30 +52,33 @@ function DeleteSessionConfirmModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 320,
           width: "100%",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         <h3
           style={{
             margin: "0 0 0.75rem 0",
             fontSize: "1.125rem",
-            color: "#1f2937",
+            fontWeight: "var(--font-weight-heading)",
+            color: "var(--color-text)",
           }}
         >
           Delete session
         </h3>
-        <p style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>
+        <p style={{ margin: "0 0 0.5rem 0", fontSize: "1rem", color: "var(--color-text)" }}>
           Permanently delete &quot;{sessionTitle}&quot;?
         </p>
         <p
           style={{
             margin: "0 0 1rem 0",
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "var(--color-text-secondary)",
             lineHeight: 1.5,
           }}
         >
@@ -94,10 +92,13 @@ function DeleteSessionConfirmModal({
             data-testid="delete-session-cancel"
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              background: "white",
+              border: `1px solid var(--color-border)`,
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
               fontSize: "0.875rem",
+              cursor: "pointer",
+              minHeight: 40,
             }}
           >
             Cancel
@@ -108,11 +109,14 @@ function DeleteSessionConfirmModal({
             data-testid="delete-session-confirm"
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #dc2626",
-              borderRadius: 6,
-              background: "#dc2626",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-danger)",
               color: "white",
               fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              minHeight: 40,
             }}
           >
             Delete permanently
@@ -168,7 +172,7 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
   if (error) {
     return (
       <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <p style={{ color: "#c5221f" }}>{error}</p>
+        <p style={{ color: "var(--color-danger)" }}>{error}</p>
         <Link
           href="/sessions"
           data-testid="switch-session-link-session-tab"
@@ -180,12 +184,12 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
             justifyContent: "center",
             alignSelf: "flex-start",
             padding: "0.5rem 0.75rem",
-            borderRadius: 6,
-            border: "1px solid #2563eb",
-            background: "white",
-            color: "#2563eb",
+            borderRadius: "var(--radius-md)",
+            border: `1px solid var(--color-accent)`,
+            background: "var(--color-accent-soft)",
+            color: "var(--color-accent)",
             fontSize: "0.875rem",
-            fontWeight: 500,
+            fontWeight: 600,
             textDecoration: "none",
           }}
           aria-label="Switch session"
@@ -198,8 +202,8 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
 
   if (!session) {
     return (
-      <div style={{ padding: "1rem" }}>
-        <p>Loading session...</p>
+      <div style={{ padding: "1rem", color: "var(--color-text-muted)" }}>
+        Loading session...
       </div>
     );
   }
@@ -210,7 +214,7 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
         padding: "1rem",
         display: "flex",
         flexDirection: "column",
-        gap: "1.25rem",
+        gap: "1.5rem",
       }}
     >
       <Link
@@ -224,25 +228,28 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
           justifyContent: "center",
           alignSelf: "flex-start",
           padding: "0.5rem 0.75rem",
-          borderRadius: 6,
-          border: "1px solid #2563eb",
-          background: "white",
-          color: "#2563eb",
-          fontSize: "0.875rem",
-          fontWeight: 500,
+          borderRadius: "var(--radius-md)",
+          border: `1px solid var(--color-accent)`,
+          background: "var(--color-accent-soft)",
+          color: "var(--color-accent)",
+          fontSize: "0.8125rem",
+          fontWeight: 600,
           textDecoration: "none",
         }}
         aria-label="Switch session"
       >
         Switch session
       </Link>
+
       <section>
         <h2
           style={{
-            fontSize: "1rem",
+            fontSize: "0.8125rem",
             fontWeight: 600,
-            margin: "0 0 0.5rem 0",
-            color: "#202124",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            margin: "0 0 0.75rem 0",
+            color: "var(--color-text-muted)",
           }}
         >
           Session info
@@ -251,36 +258,24 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
           style={{
             margin: 0,
             display: "grid",
-            gap: "0.5rem",
-            fontSize: "0.9rem",
+            gap: "0.625rem",
+            fontSize: "0.875rem",
           }}
         >
-          <div>
-            <dt style={{ fontWeight: 500, color: "#5f6368" }}>Title</dt>
-            <dd style={{ margin: "0.25rem 0 0 0" }}>{session.title}</dd>
-          </div>
-          <div>
-            <dt style={{ fontWeight: 500, color: "#5f6368" }}>PDF file</dt>
-            <dd style={{ margin: "0.25rem 0 0 0" }}>{session.pdfFileName}</dd>
-          </div>
-          <div>
-            <dt style={{ fontWeight: 500, color: "#5f6368" }}>Size</dt>
-            <dd style={{ margin: "0.25rem 0 0 0" }}>
-              {formatByteLength(session.pdfByteLength)}
-            </dd>
-          </div>
-          <div>
-            <dt style={{ fontWeight: 500, color: "#5f6368" }}>Created</dt>
-            <dd style={{ margin: "0.25rem 0 0 0" }}>
-              {formatDate(session.createdAt)}
-            </dd>
-          </div>
-          {session.pageCount !== null && (
-            <div>
-              <dt style={{ fontWeight: 500, color: "#5f6368" }}>Pages</dt>
-              <dd style={{ margin: "0.25rem 0 0 0" }}>{session.pageCount}</dd>
+          {[
+            { label: "Title", value: session.title },
+            { label: "PDF file", value: session.pdfFileName },
+            { label: "Size", value: formatByteLength(session.pdfByteLength) },
+            { label: "Created", value: formatDate(session.createdAt) },
+            ...(session.pageCount !== null ? [{ label: "Pages", value: String(session.pageCount) }] : []),
+          ].map(({ label, value }) => (
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <dt style={{ fontWeight: 500, color: "var(--color-text-secondary)" }}>{label}</dt>
+              <dd style={{ margin: 0, color: "var(--color-text)", fontFamily: label === "Size" ? "var(--font-family-mono)" : "inherit" }}>
+                {value}
+              </dd>
             </div>
-          )}
+          ))}
         </dl>
       </section>
 
@@ -289,27 +284,29 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
         aria-live="polite"
         style={{
           padding: "1rem",
-          borderRadius: "8px",
-          backgroundColor: "#fef7e0",
-          border: "1px solid #f9a825",
+          borderRadius: "var(--radius-lg)",
+          backgroundColor: "var(--color-warning-bg)",
+          border: `1px solid var(--color-warning-border)`,
         }}
       >
         <h2
           style={{
-            fontSize: "1rem",
+            fontSize: "0.8125rem",
             fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
             margin: "0 0 0.5rem 0",
-            color: "#b06000",
+            color: "var(--color-warning-text)",
           }}
         >
           Data storage
         </h2>
         <p
           style={{
-            margin: "0 0 0.5rem 0",
-            fontSize: "0.9rem",
+            margin: "0 0 0.375rem 0",
+            fontSize: "0.875rem",
             lineHeight: 1.5,
-            color: "#333",
+            color: "var(--color-text-secondary)",
           }}
         >
           Your data is stored only in this browser on this device.
@@ -317,9 +314,9 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
         <p
           style={{
             margin: 0,
-            fontSize: "0.9rem",
+            fontSize: "0.875rem",
             lineHeight: 1.5,
-            color: "#333",
+            color: "var(--color-text-secondary)",
           }}
         >
           Clearing browser data may delete your sessions permanently.
@@ -329,10 +326,12 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
       <section>
         <h2
           style={{
-            fontSize: "1rem",
+            fontSize: "0.8125rem",
             fontWeight: 600,
-            margin: "0 0 0.5rem 0",
-            color: "#202124",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            margin: "0 0 0.75rem 0",
+            color: "var(--color-danger)",
           }}
         >
           Danger zone
@@ -344,15 +343,17 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
           disabled={isDeleting}
           style={{
             padding: "0.5rem 1rem",
-            border: "1px solid #dc2626",
-            borderRadius: 6,
-            background: "white",
-            color: "#dc2626",
+            border: `1px solid var(--color-danger)`,
+            borderRadius: "var(--radius-md)",
+            background: "var(--color-danger-soft)",
+            color: "var(--color-danger)",
             fontSize: "0.875rem",
-            fontWeight: 500,
+            fontWeight: 600,
+            cursor: isDeleting ? "not-allowed" : "pointer",
+            minHeight: 44,
           }}
         >
-          {isDeleting ? "Deleting…" : "Delete session"}
+          {isDeleting ? "Deleting\u2026" : "Delete session"}
         </button>
       </section>
 

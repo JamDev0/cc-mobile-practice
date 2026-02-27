@@ -74,7 +74,7 @@ export function EditMarkerSheet({
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0,0,0,0.5)",
+          background: "var(--color-modal-backdrop)",
           zIndex: 1100,
           display: "flex",
           alignItems: "center",
@@ -84,16 +84,32 @@ export function EditMarkerSheet({
       >
         <div
           style={{
-            background: "white",
-            borderRadius: 8,
+            background: "var(--color-surface)",
+            borderRadius: "var(--radius-modal)",
             padding: "1.5rem",
             maxWidth: 320,
+            border: `1px solid var(--color-border)`,
+            boxShadow: "var(--shadow-lg)",
           }}
         >
-          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>
+          <h3
+            style={{
+              margin: "0 0 0.5rem 0",
+              fontSize: "1rem",
+              fontWeight: "var(--font-weight-heading)",
+              color: "var(--color-text)",
+            }}
+          >
             Question number already used
           </h3>
-          <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#374151" }}>
+          <p
+            style={{
+              margin: "0 0 1rem 0",
+              fontSize: "0.875rem",
+              color: "var(--color-text-secondary)",
+              lineHeight: 1.5,
+            }}
+          >
             Saving this change creates a conflict and excludes this question from
             grading.
           </p>
@@ -103,9 +119,12 @@ export function EditMarkerSheet({
               onClick={handleDuplicateCancel}
               style={{
                 padding: "0.5rem 1rem",
-                border: "1px solid #d1d5db",
-                borderRadius: 4,
-                background: "white",
+                border: `1px solid var(--color-border)`,
+                borderRadius: "var(--radius-md)",
+                background: "var(--color-surface)",
+                color: "var(--color-text)",
+                fontSize: "0.875rem",
+                cursor: "pointer",
               }}
             >
               Cancel
@@ -115,10 +134,12 @@ export function EditMarkerSheet({
               onClick={handleDuplicateContinue}
               style={{
                 padding: "0.5rem 1rem",
-                borderRadius: 4,
-                background: "#dc2626",
+                borderRadius: "var(--radius-md)",
+                background: "var(--color-danger)",
                 color: "white",
                 border: "none",
+                fontSize: "0.875rem",
+                cursor: "pointer",
               }}
             >
               Continue
@@ -136,23 +157,38 @@ export function EditMarkerSheet({
         bottom: 0,
         left: 0,
         right: 0,
-        background: "white",
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-        padding: "1rem",
-        paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
-        boxShadow: "0 -4px 12px rgba(0,0,0,0.1)",
+        background: "var(--color-surface)",
+        borderTopLeftRadius: "var(--radius-sheet)",
+        borderTopRightRadius: "var(--radius-sheet)",
+        padding: "1.25rem",
+        paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",
+        boxShadow: "var(--shadow-sheet)",
         zIndex: 1000,
+        borderTop: `1px solid var(--color-border)`,
       }}
     >
-      <h3 style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+      <h3
+        style={{
+          margin: "0 0 1rem 0",
+          fontSize: "1rem",
+          fontWeight: "var(--font-weight-heading)",
+          letterSpacing: "var(--letter-spacing-heading)",
+          color: "var(--color-text)",
+        }}
+      >
         Edit marker
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <div>
           <label
             htmlFor="edit-question-number"
-            style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+            style={{
+              display: "block",
+              marginBottom: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
           >
             Question number
           </label>
@@ -164,14 +200,23 @@ export function EditMarkerSheet({
             onChange={(e) => setQuestionNumber(e.target.value.replace(/[^0-9]/g, ""))}
             style={{
               width: "100%",
-              padding: "0.5rem",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
+              padding: "0.625rem 0.75rem",
+              borderRadius: "var(--radius-md)",
+              border: `1px solid var(--color-input-border)`,
+              background: "var(--color-input-bg)",
+              color: "var(--color-input-text)",
               fontSize: "1rem",
+              fontFamily: "var(--font-family-mono)",
             }}
           />
           {isDuplicate && (
-            <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#dc2626" }}>
+            <p
+              style={{
+                margin: "0.375rem 0 0",
+                fontSize: "0.75rem",
+                color: "var(--color-danger)",
+              }}
+            >
               Question number already used
             </p>
           )}
@@ -179,7 +224,13 @@ export function EditMarkerSheet({
         <div>
           <label
             htmlFor="edit-answer-token"
-            style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+            style={{
+              display: "block",
+              marginBottom: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
           >
             Answer
           </label>
@@ -189,9 +240,11 @@ export function EditMarkerSheet({
             onChange={(e) => setAnswerToken(e.target.value as AnswerToken)}
             style={{
               width: "100%",
-              padding: "0.5rem",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
+              padding: "0.625rem 0.75rem",
+              borderRadius: "var(--radius-md)",
+              border: `1px solid var(--color-input-border)`,
+              background: "var(--color-input-bg)",
+              color: "var(--color-input-text)",
               fontSize: "1rem",
             }}
           >
@@ -207,7 +260,7 @@ export function EditMarkerSheet({
         style={{
           display: "flex",
           gap: "0.5rem",
-          marginTop: "1rem",
+          marginTop: "1.25rem",
           justifyContent: "space-between",
         }}
       >
@@ -216,10 +269,14 @@ export function EditMarkerSheet({
           onClick={onDelete}
           style={{
             padding: "0.5rem 1rem",
-            borderRadius: 4,
-            background: "#dc2626",
+            borderRadius: "var(--radius-md)",
+            background: "var(--color-danger)",
             color: "white",
             border: "none",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            minHeight: 44,
           }}
         >
           Delete
@@ -230,9 +287,13 @@ export function EditMarkerSheet({
             onClick={onClose}
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 4,
-              background: "white",
+              border: `1px solid var(--color-border)`,
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              minHeight: 44,
             }}
           >
             Cancel
@@ -243,10 +304,14 @@ export function EditMarkerSheet({
             disabled={!isValidQuestion}
             style={{
               padding: "0.5rem 1rem",
-              borderRadius: 4,
-              background: "#2563eb",
-              color: "white",
+              borderRadius: "var(--radius-md)",
+              background: isValidQuestion ? "var(--color-accent)" : "var(--color-text-muted)",
+              color: "var(--color-accent-text)",
               border: "none",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: isValidQuestion ? "pointer" : "not-allowed",
+              minHeight: 44,
             }}
           >
             Save

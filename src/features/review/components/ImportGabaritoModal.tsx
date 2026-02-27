@@ -71,7 +71,7 @@ export function ImportGabaritoModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.5)",
+        background: "var(--color-modal-backdrop)",
         zIndex: 1100,
         display: "flex",
         alignItems: "center",
@@ -83,26 +83,65 @@ export function ImportGabaritoModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: 12,
+          background: "var(--color-surface)",
+          borderRadius: "var(--radius-modal)",
           padding: "1.5rem",
           maxWidth: 400,
           width: "100%",
           maxHeight: "90vh",
           overflow: "auto",
+          border: `1px solid var(--color-border)`,
+          boxShadow: "var(--shadow-lg)",
         }}
       >
-        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.125rem" }}>
+        <h3
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "1.125rem",
+            fontWeight: "var(--font-weight-heading)",
+            letterSpacing: "var(--letter-spacing-heading)",
+            color: "var(--color-text)",
+          }}
+        >
           Import gabarito
         </h3>
-        <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
-          Paste answer key as plain text. Format A: <code>1A,2B,3C</code>. Format B: <code>A,B,C</code> (sequential).
+        <p
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "0.8125rem",
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.5,
+          }}
+        >
+          Paste answer key as plain text. Format A: <code
+            style={{
+              padding: "0.125rem 0.375rem",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-surface-alt)",
+              fontFamily: "var(--font-family-mono)",
+              fontSize: "0.8125rem",
+            }}
+          >1A,2B,3C</code>. Format B: <code
+            style={{
+              padding: "0.125rem 0.375rem",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-surface-alt)",
+              fontFamily: "var(--font-family-mono)",
+              fontSize: "0.8125rem",
+            }}
+          >A,B,C</code> (sequential).
         </p>
 
         <div style={{ marginBottom: "1rem" }}>
           <label
             htmlFor="import-text"
-            style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+            style={{
+              display: "block",
+              marginBottom: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
           >
             Paste text
           </label>
@@ -117,11 +156,13 @@ export function ImportGabaritoModal({
             rows={4}
             style={{
               width: "100%",
-              padding: "0.5rem",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
-              fontSize: "0.9375rem",
-              fontFamily: "monospace",
+              padding: "0.625rem 0.75rem",
+              borderRadius: "var(--radius-md)",
+              border: `1px solid var(--color-input-border)`,
+              background: "var(--color-input-bg)",
+              color: "var(--color-input-text)",
+              fontSize: "0.875rem",
+              fontFamily: "var(--font-family-mono)",
               resize: "vertical",
             }}
           />
@@ -131,9 +172,15 @@ export function ImportGabaritoModal({
           <div style={{ marginBottom: "1rem" }}>
             <label
               htmlFor="import-format"
-              style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+              style={{
+                display: "block",
+                marginBottom: "0.375rem",
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                color: "var(--color-text-secondary)",
+              }}
             >
-              Format (ambiguous — choose)
+              Format (ambiguous \u2014 choose)
             </label>
             <select
               id="import-format"
@@ -141,13 +188,15 @@ export function ImportGabaritoModal({
               onChange={(e) => setFormat(e.target.value as ImportFormat)}
               style={{
                 width: "100%",
-                padding: "0.5rem",
-                borderRadius: 4,
-                border: "1px solid #d1d5db",
+                padding: "0.625rem 0.75rem",
+                borderRadius: "var(--radius-md)",
+                border: `1px solid var(--color-input-border)`,
+                background: "var(--color-input-bg)",
+                color: "var(--color-input-text)",
               }}
             >
-              <option value="A">Format A (1A, 2B, …)</option>
-              <option value="B">Format B (A, B, C, …)</option>
+              <option value="A">Format A (1A, 2B, ...)</option>
+              <option value="B">Format B (A, B, C, ...)</option>
             </select>
           </div>
         )}
@@ -156,7 +205,13 @@ export function ImportGabaritoModal({
           <div style={{ marginBottom: "1rem" }}>
             <label
               htmlFor="import-start"
-              style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+              style={{
+                display: "block",
+                marginBottom: "0.375rem",
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                color: "var(--color-text-secondary)",
+              }}
             >
               Start question number (Format B)
             </label>
@@ -168,9 +223,12 @@ export function ImportGabaritoModal({
               onChange={(e) => setStartQuestionNumber(e.target.value)}
               style={{
                 width: "100%",
-                padding: "0.5rem",
-                borderRadius: 4,
-                border: "1px solid #d1d5db",
+                padding: "0.625rem 0.75rem",
+                borderRadius: "var(--radius-md)",
+                border: `1px solid var(--color-input-border)`,
+                background: "var(--color-input-bg)",
+                color: "var(--color-input-text)",
+                fontFamily: "var(--font-family-mono)",
               }}
             />
           </div>
@@ -179,7 +237,13 @@ export function ImportGabaritoModal({
         <div style={{ marginBottom: "1rem" }}>
           <label
             htmlFor="import-strategy"
-            style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+            style={{
+              display: "block",
+              marginBottom: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
           >
             Strategy
           </label>
@@ -189,13 +253,15 @@ export function ImportGabaritoModal({
             onChange={(e) => setStrategy(e.target.value as ImportStrategy)}
             style={{
               width: "100%",
-              padding: "0.5rem",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
+              padding: "0.625rem 0.75rem",
+              borderRadius: "var(--radius-md)",
+              border: `1px solid var(--color-input-border)`,
+              background: "var(--color-input-bg)",
+              color: "var(--color-input-text)",
             }}
           >
-            <option value="replace">Replace — remove existing, insert new</option>
-            <option value="merge">Merge — update overlaps, keep others</option>
+            <option value="replace">Replace \u2014 remove existing, insert new</option>
+            <option value="merge">Merge \u2014 update overlaps, keep others</option>
           </select>
         </div>
 
@@ -204,13 +270,14 @@ export function ImportGabaritoModal({
             style={{
               marginBottom: "1rem",
               padding: "0.75rem",
-              background: "#f9fafb",
-              borderRadius: 8,
+              background: "var(--color-surface-alt)",
+              borderRadius: "var(--radius-md)",
               fontSize: "0.875rem",
+              border: `1px solid var(--color-border)`,
             }}
           >
-            <p style={{ margin: "0 0 0.5rem 0" }}>
-              Imported: {report.importedCount} · Skipped: {report.skippedCount}
+            <p style={{ margin: "0 0 0.5rem 0", color: "var(--color-text)", fontFamily: "var(--font-family-mono)" }}>
+              Imported: {report.importedCount} \u00B7 Skipped: {report.skippedCount}
             </p>
             {report.skippedCount > 0 && report.warnings.length > 0 && (
               <>
@@ -223,7 +290,8 @@ export function ImportGabaritoModal({
                     cursor: "pointer",
                     padding: 0,
                     fontSize: "0.8125rem",
-                    color: "#2563eb",
+                    color: "var(--color-accent)",
+                    fontWeight: 500,
                   }}
                 >
                   {showWarnings ? "Hide" : "Show"} warnings
@@ -231,8 +299,15 @@ export function ImportGabaritoModal({
                 {showWarnings && (
                   <ul style={{ margin: "0.5rem 0 0 0", paddingLeft: "1.25rem" }}>
                     {report.warnings.map((w: ImportWarning, i: number) => (
-                      <li key={i} style={{ marginBottom: "0.25rem" }}>
-                        #{w.index + 1}: &quot;{w.rawValue}&quot; — {w.reason}
+                      <li
+                        key={i}
+                        style={{
+                          marginBottom: "0.25rem",
+                          color: "var(--color-text-secondary)",
+                          fontSize: "0.8125rem",
+                        }}
+                      >
+                        #{w.index + 1}: &quot;{w.rawValue}&quot; \u2014 {w.reason}
                       </li>
                     ))}
                   </ul>
@@ -255,9 +330,13 @@ export function ImportGabaritoModal({
             onClick={onClose}
             style={{
               padding: "0.5rem 1rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 4,
-              background: "white",
+              border: `1px solid var(--color-border)`,
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              minHeight: 40,
             }}
           >
             Close
@@ -268,13 +347,19 @@ export function ImportGabaritoModal({
             disabled={!canSubmit || !formatBStartValid || isSubmitting}
             style={{
               padding: "0.5rem 1rem",
-              borderRadius: 4,
-              background: canSubmit && formatBStartValid ? "#2563eb" : "#9ca3af",
-              color: "white",
+              borderRadius: "var(--radius-md)",
+              background: canSubmit && formatBStartValid
+                ? "var(--color-accent)"
+                : "var(--color-text-muted)",
+              color: "var(--color-accent-text)",
               border: "none",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: canSubmit && formatBStartValid ? "pointer" : "not-allowed",
+              minHeight: 40,
             }}
           >
-            {isSubmitting ? "Importing…" : "Import"}
+            {isSubmitting ? "Importing\u2026" : "Import"}
           </button>
         </div>
       </div>
