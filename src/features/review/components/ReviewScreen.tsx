@@ -56,6 +56,164 @@ interface ConflictPickerModalProps {
   openEditAfterJump: boolean;
 }
 
+interface DeleteConflictPickerModalProps {
+  markers: Marker[];
+  questionNumber: number;
+  onSelect: (marker: Marker) => void;
+  onClose: () => void;
+}
+
+function DeleteConflictPickerModal({
+  markers,
+  questionNumber,
+  onSelect,
+  onClose,
+}: DeleteConflictPickerModalProps) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      role="dialog"
+      aria-label="Conflict: choose marker to delete"
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: "1.5rem",
+          maxWidth: 320,
+          width: "100%",
+        }}
+      >
+        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+          Question {questionNumber} has multiple markers
+        </h3>
+        <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
+          Choose which marker to delete:
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {markers.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                onSelect(m);
+                onClose();
+              }}
+              style={{
+                padding: "0.75rem 1rem",
+                textAlign: "left",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                background: "white",
+                fontSize: "0.9375rem",
+              }}
+            >
+              Marker on page {m.pageNumber} — {m.answerToken ?? "—"}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            marginTop: "1rem",
+            padding: "0.5rem 1rem",
+            border: "1px solid #d1d5db",
+            borderRadius: 4,
+            background: "white",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface DeleteConfirmModalProps {
+  questionNumber: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function DeleteConfirmModal({
+  questionNumber,
+  onConfirm,
+  onCancel,
+}: DeleteConfirmModalProps) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      role="dialog"
+      aria-label="Delete user answer confirmation"
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: "1.5rem",
+          maxWidth: 320,
+          width: "100%",
+        }}
+      >
+        <p style={{ margin: "0 0 1rem 0", fontSize: "1rem" }}>
+          Delete this user answer?
+        </p>
+        <p style={{ margin: "0 0 1rem 0", fontSize: "0.875rem", color: "#6b7280" }}>
+          Question {questionNumber} will show as missing user answer.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              padding: "0.5rem 1rem",
+              border: "1px solid #d1d5db",
+              borderRadius: 6,
+              background: "white",
+              fontSize: "0.875rem",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              padding: "0.5rem 1rem",
+              border: "1px solid #dc2626",
+              borderRadius: 6,
+              background: "#dc2626",
+              color: "white",
+              fontSize: "0.875rem",
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConflictPickerModal({
   markers,
   questionNumber,
@@ -148,6 +306,7 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     getGabaritoEntryByQuestion,
     saveGabaritoEntry,
     deleteGabaritoEntry,
+    deleteUserMarker,
     importGabarito,
     detectImportFormat,
     clearWriteError,
@@ -160,6 +319,11 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
   const [conflictRow, setConflictRow] = useState<{
     row: ReviewRow;
     openEditAfterJump: boolean;
+  } | null>(null);
+  const [deleteConflictRow, setDeleteConflictRow] = useState<ReviewRow | null>(null);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<{
+    markerId: string;
+    questionNumber: number;
   } | null>(null);
 
   useEffect(() => {
@@ -215,6 +379,37 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     },
     [sessionId, onRequestJump]
   );
+
+  const handleDeleteTap = useCallback((row: ReviewRow) => {
+    if (row.userMarkers.length === 0) return;
+    if (row.userMarkers.length > 1) {
+      setDeleteConflictRow(row);
+      return;
+    }
+    setDeleteConfirmTarget({
+      markerId: row.userMarkers[0].id,
+      questionNumber: row.questionNumber,
+    });
+  }, []);
+
+  const handleDeleteConflictSelect = useCallback((marker: Marker) => {
+    setDeleteConflictRow(null);
+    setDeleteConfirmTarget({
+      markerId: marker.id,
+      questionNumber: marker.questionNumber,
+    });
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteConfirmTarget) return;
+    await deleteUserMarker(deleteConfirmTarget.markerId);
+    setDeleteConfirmTarget(null);
+  }, [deleteConfirmTarget, deleteUserMarker]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteConfirmTarget(null);
+    setDeleteConflictRow(null);
+  }, []);
 
   if (error) {
     return (
@@ -425,6 +620,16 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
               >
                 Status
               </th>
+              <th
+                style={{
+                  padding: "0.75rem 1rem",
+                  width: 52,
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}
+              >
+                Delete
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -515,6 +720,39 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                 >
                   <StatusBadge status={row.status} />
                 </td>
+                <td
+                  style={{
+                    padding: "0.75rem 1rem",
+                    textAlign: "center",
+                    verticalAlign: "middle",
+                  }}
+                >
+                  {row.userMarkers.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTap(row)}
+                      aria-label={`Delete user answer for question ${row.questionNumber}`}
+                      data-testid={`delete-Q${row.questionNumber}`}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        minWidth: 44,
+                        minHeight: 44,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1rem",
+                        color: "#dc2626",
+                      }}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    <span style={{ color: "#9ca3af", fontSize: "0.75rem" }}>—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -546,6 +784,23 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
           onSelect={(m, openEdit) => handleConflictSelect(m, openEdit)}
           onClose={() => setConflictRow(null)}
           openEditAfterJump={conflictRow.openEditAfterJump}
+        />
+      )}
+
+      {deleteConflictRow && (
+        <DeleteConflictPickerModal
+          markers={deleteConflictRow.userMarkers}
+          questionNumber={deleteConflictRow.questionNumber}
+          onSelect={handleDeleteConflictSelect}
+          onClose={() => setDeleteConflictRow(null)}
+        />
+      )}
+
+      {deleteConfirmTarget && (
+        <DeleteConfirmModal
+          questionNumber={deleteConfirmTarget.questionNumber}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
         />
       )}
     </div>

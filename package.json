@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/ 2>/dev/null || true",
+    "postinstall": "node scripts/patch-pdfjs.js && (cp node_modules/react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/ 2>/dev/null || cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/ 2>/dev/null || true)",
     "test:e2e": "playwright test"
   },
   "dependencies": {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { getSession } from "@/storage/indexeddb/sessionAdapter";
 import { listMarkersBySession } from "@/storage/indexeddb/markerAdapter";
+import { deleteMarker } from "@/storage/indexeddb/markerAdapter";
 import {
   listGabaritoEntriesBySession,
   putGabaritoEntry,
@@ -57,6 +58,7 @@ export interface UseReviewSessionResult {
     answerToken: AnswerToken
   ) => Promise<void>;
   deleteGabaritoEntry: (entryId: string) => Promise<void>;
+  deleteUserMarker: (markerId: string) => Promise<void>;
   getGabaritoEntryByQuestion: (questionNumber: number) => GabaritoEntry | null;
   importGabarito: (
     rawText: string,
@@ -181,6 +183,28 @@ export function useReviewSession(
     [gabaritoEntries]
   );
 
+  const deleteUserMarker = useCallback(
+    async (markerId: string) => {
+      if (!sessionId) return;
+      try {
+        const db = await openDatabase();
+        await deleteMarker(db, markerId);
+        const m = await listMarkersBySession(db, sessionId);
+        const g = await listGabaritoEntriesBySession(db, sessionId);
+        db.close();
+        setMarkers(deriveMarkerStatuses(m));
+        setSnapshot(
+          computeGradingSnapshot(sessionId, deriveMarkerStatuses(m), g)
+        );
+        setWriteError(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to delete marker";
+        setWriteError(msg);
+      }
+    },
+    [sessionId]
+  );
+
   const detectImportFormatForText = useCallback((rawText: string) => {
     const { normalized } = normalizeInput(rawText);
     return detectFormat(normalized);
@@ -256,6 +280,7 @@ export function useReviewSession(
     refresh,
     saveGabaritoEntry,
     deleteGabaritoEntry: deleteGabaritoEntryById,
+    deleteUserMarker,
     getGabaritoEntryByQuestion,
     importGabarito: importGabaritoFn,
     detectImportFormat: detectImportFormatForText,
