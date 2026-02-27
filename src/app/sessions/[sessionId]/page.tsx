@@ -86,7 +86,7 @@ export default function SessionPage() {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        paddingBottom: "56px",
+        paddingBottom: "max(56px, calc(56px + env(safe-area-inset-bottom, 0px)))",
       }}
     >
       <header

@@ -25,6 +25,9 @@ export function TabBar<T extends string>({
         borderTop: "1px solid #eee",
         background: "#fff",
         minHeight: "56px",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        zIndex: 100,
+        isolation: "isolate",
       }}
     >
       {tabs.map((tab) => (

@@ -36,6 +36,27 @@ test.describe("Session page (tabbed layout)", () => {
     await expect(page.getByRole("tab", { name: "Session" })).toBeVisible();
   });
 
+  test("NPI-01: Tap each tab from Solve view changes active tab correctly", async ({
+    page,
+  }) => {
+    await page.goto("/sessions/test-session-id");
+    await page.getByRole("tab", { name: "Review" }).click();
+    await expect(page.getByRole("tab", { name: "Review" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    await page.getByRole("tab", { name: "Session" }).click();
+    await expect(page.getByRole("tab", { name: "Session" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    await page.getByRole("tab", { name: "Solve" }).click();
+    await expect(page.getByRole("tab", { name: "Solve" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+  });
+
   test("Session tab loads content", async ({ page }) => {
     await page.goto("/sessions/test-session-id");
     await page.getByRole("tab", { name: "Session" }).click();
