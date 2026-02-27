@@ -58,13 +58,6 @@ const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.15;
 
-function pinchDistance(touches: { length: number; 0?: Touch; 1?: Touch }): number {
-  if (touches.length < 2 || !touches[0] || !touches[1]) return 0;
-  const a = touches[0];
-  const b = touches[1];
-  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-}
-
 export function PdfViewport({
   pdfBlob,
   pageCount,
@@ -97,10 +90,6 @@ export function PdfViewport({
     Map<number, { width: number; height: number }>
   >(new Map());
   const [scale, setScale] = useState(1);
-  const pinchRef = useRef<{
-    initialDistance: number;
-    initialScale: number;
-  } | null>(null);
 
   useEffect(() => {
     if (scrollToPageNumber == null) return;
@@ -332,39 +321,6 @@ export function PdfViewport({
     [cancelLongPress]
   );
 
-  const handleContainerTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2 && !pinchRef.current) {
-      pinchRef.current = {
-        initialDistance: pinchDistance(e.touches),
-        initialScale: scale,
-      };
-    }
-  }, [scale]);
-
-  const handleContainerTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length !== 2 || !pinchRef.current) return;
-      e.preventDefault();
-      const dist = pinchDistance(e.touches);
-      if (dist === 0) return;
-      const { initialDistance, initialScale } = pinchRef.current;
-      if (initialDistance === 0) return;
-      const ratio = dist / initialDistance;
-      const next = Math.max(
-        ZOOM_MIN,
-        Math.min(ZOOM_MAX, initialScale * ratio)
-      );
-      setScale(next);
-    },
-    []
-  );
-
-  const handleContainerTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
-      pinchRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -426,13 +382,9 @@ export function PdfViewport({
         flexDirection: "column",
         alignItems: "center",
         padding: "1rem",
-        touchAction: disableScroll ? "none" : "auto",
+        touchAction: disableScroll ? "none" : "pan-x pan-y",
         overscrollBehavior: "none",
       }}
-      onTouchStart={handleContainerTouchStart}
-      onTouchMove={handleContainerTouchMove}
-      onTouchEnd={handleContainerTouchEnd}
-      onTouchCancel={handleContainerTouchEnd}
       onScroll={() => {
         // If user scrolls normally, cancel any pending long-press detection.
         if (longPressRef.current && !longPressRef.current.triggered) {
@@ -505,7 +457,7 @@ export function PdfViewport({
               style={{
                 cursor: "pointer",
                 position: "relative",
-                touchAction: disableScroll ? "none" : "auto",
+                touchAction: disableScroll ? "none" : "pan-x pan-y",
                 userSelect: "none",
                 WebkitUserSelect: "none",
               }}

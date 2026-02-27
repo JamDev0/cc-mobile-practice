@@ -158,6 +158,27 @@ describe("PdfViewport interactions", () => {
     expect(style).toContain("overflow: auto");
   });
 
+  it("uses pan-x pan-y touch-action when scroll enabled to block browser pinch zoom", () => {
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={1}
+        onPageCountKnown={() => {}}
+        onPageTap={() => {}}
+        renderMarkerOverlay={() => null}
+        pendingMarker={null}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+        disableScroll={false}
+      />
+    );
+    const viewport = screen.getByTestId("pdf-viewport-scroll");
+    const touchAction = (viewport as HTMLElement).style.touchAction;
+    expect(touchAction).toBe("pan-x pan-y");
+  });
+
   it("jump prefers marker target when marker is mounted", async () => {
     vi.useRealTimers();
     const onScrollAttempted = vi.fn();
