@@ -1,13 +1,13 @@
 /**
  * IndexedDB schema and open logic per specs/01-domain-data-model-ralph-spec.md §5.
- * Database: mobile-practice-db, version 1.
+ * Database: mobile-practice-db, version 2 (v2: answerComments store for per-answer review comments).
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { Session, Marker, GabaritoEntry } from "@/domain/models/types";
+import type { Session, Marker, GabaritoEntry, AnswerComment } from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface PdfBlobRecord {
   sessionId: string;
@@ -52,9 +52,17 @@ export interface MobilePracticeDB extends DBSchema {
     key: string;
     value: MetaRecord;
   };
+  answerComments: {
+    key: string;
+    value: AnswerComment;
+    indexes: {
+      sessionId: string;
+      "sessionId-questionNumber": [string, number];
+    };
+  };
 }
 
-function upgrade(db: IDBPDatabase<MobilePracticeDB>) {
+function upgradeV1(db: IDBPDatabase<MobilePracticeDB>) {
   const sessionsStore = db.createObjectStore("sessions", { keyPath: "id" });
   sessionsStore.createIndex("updatedAt", "updatedAt");
   sessionsStore.createIndex("createdAt", "createdAt");
@@ -75,10 +83,17 @@ function upgrade(db: IDBPDatabase<MobilePracticeDB>) {
   db.createObjectStore("meta", { keyPath: "key" });
 }
 
+function upgradeV2(db: IDBPDatabase<MobilePracticeDB>) {
+  const store = db.createObjectStore("answerComments", { keyPath: "id" });
+  store.createIndex("sessionId", "sessionId");
+  store.createIndex("sessionId-questionNumber", ["sessionId", "questionNumber"]);
+}
+
 export function openDatabase() {
   return openDB<MobilePracticeDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      upgrade(db);
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) upgradeV1(db);
+      if (oldVersion < 2) upgradeV2(db);
     },
   });
 }

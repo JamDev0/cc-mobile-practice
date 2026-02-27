@@ -11,6 +11,11 @@ import {
   deleteGabaritoEntry,
   deleteAllGabaritoEntriesForSession,
 } from "@/storage/indexeddb/gabaritoAdapter";
+import {
+  listAnswerCommentsBySession,
+  putAnswerComment,
+  getAnswerComment,
+} from "@/storage/indexeddb/answerCommentAdapter";
 import { deriveMarkerStatuses } from "@/domain/conflicts/deriveMarkerStatuses";
 import { computeGradingSnapshot } from "@/domain/grading/computeGradingSnapshot";
 import {
@@ -32,6 +37,10 @@ import type {
 
 function generateGabaritoId(): string {
   return `gabarito-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function generateAnswerCommentId(): string {
+  return `comment-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export type ImportStrategy = "replace" | "merge";
@@ -60,6 +69,8 @@ export interface UseReviewSessionResult {
   deleteGabaritoEntry: (entryId: string) => Promise<void>;
   deleteUserMarker: (markerId: string) => Promise<void>;
   getGabaritoEntryByQuestion: (questionNumber: number) => GabaritoEntry | null;
+  getCommentByQuestion: (questionNumber: number) => string | null;
+  saveAnswerComment: (questionNumber: number, comment: string) => Promise<void>;
   importGabarito: (
     rawText: string,
     options: ImportGabaritoOptions
@@ -74,6 +85,9 @@ export function useReviewSession(
   const [session, setSession] = useState<Session | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [gabaritoEntries, setGabaritoEntries] = useState<GabaritoEntry[]>([]);
+  const [commentsByQuestion, setCommentsByQuestion] = useState<
+    Record<number, string>
+  >({});
   const [snapshot, setSnapshot] = useState<GradingSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -91,7 +105,11 @@ export function useReviewSession(
       const s = await getSession(db, sessionId);
       const m = await listMarkersBySession(db, sessionId);
       const g = await listGabaritoEntriesBySession(db, sessionId);
+      const comments = await listAnswerCommentsBySession(db, sessionId);
       db.close();
+      const byQuestion: Record<number, string> = {};
+      for (const c of comments) byQuestion[c.questionNumber] = c.comment;
+      setCommentsByQuestion(byQuestion);
       setSession(s ?? null);
       setMarkers(deriveMarkerStatuses(m));
       setGabaritoEntries(g);
@@ -181,6 +199,44 @@ export function useReviewSession(
     (questionNumber: number) =>
       gabaritoEntries.find((e) => e.questionNumber === questionNumber) ?? null,
     [gabaritoEntries]
+  );
+
+  const getCommentByQuestion = useCallback(
+    (questionNumber: number) =>
+      commentsByQuestion[questionNumber] ?? null,
+    [commentsByQuestion]
+  );
+
+  const saveAnswerComment = useCallback(
+    async (questionNumber: number, comment: string) => {
+      if (!sessionId) return;
+      try {
+        const db = await openDatabase();
+        const existing = await getAnswerComment(db, sessionId, questionNumber);
+        const now = Date.now();
+        const entry = existing
+          ? { ...existing, comment, updatedAt: now }
+          : {
+              id: generateAnswerCommentId(),
+              sessionId,
+              questionNumber,
+              comment,
+              updatedAt: now,
+            };
+        await putAnswerComment(db, entry);
+        const all = await listAnswerCommentsBySession(db, sessionId);
+        db.close();
+        const byQuestion: Record<number, string> = {};
+        for (const c of all) byQuestion[c.questionNumber] = c.comment;
+        setCommentsByQuestion(byQuestion);
+        setWriteError(null);
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to save comment";
+        setWriteError(msg);
+      }
+    },
+    [sessionId]
   );
 
   const deleteUserMarker = useCallback(
@@ -282,6 +338,8 @@ export function useReviewSession(
     deleteGabaritoEntry: deleteGabaritoEntryById,
     deleteUserMarker,
     getGabaritoEntryByQuestion,
+    getCommentByQuestion,
+    saveAnswerComment,
     importGabarito: importGabaritoFn,
     detectImportFormat: detectImportFormatForText,
     clearWriteError,

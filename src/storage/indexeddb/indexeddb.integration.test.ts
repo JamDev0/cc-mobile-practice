@@ -13,7 +13,17 @@ import { putSession, getSession, listSessions } from "./sessionAdapter";
 import { putPdfBlob, getPdfBlob } from "./pdfBlobAdapter";
 import { putMarker, listMarkersBySession } from "./markerAdapter";
 import { putGabaritoEntry, listGabaritoEntriesBySession } from "./gabaritoAdapter";
-import type { Session, Marker, GabaritoEntry } from "@/domain/models/types";
+import {
+  putAnswerComment,
+  getAnswerComment,
+  listAnswerCommentsBySession,
+} from "./answerCommentAdapter";
+import type {
+  Session,
+  Marker,
+  GabaritoEntry,
+  AnswerComment,
+} from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
 
@@ -130,6 +140,42 @@ describe("IndexedDB create->reload->read", () => {
         questionNumber: gabaritoEntry.questionNumber,
         answerToken: gabaritoEntry.answerToken,
       });
+
+      db.close();
+    }
+  });
+
+  it("persists answer comments across close/reopen", async () => {
+    const session = makeSession();
+    const comment: AnswerComment = {
+      id: "comment-1",
+      sessionId: session.id,
+      questionNumber: 5,
+      comment: "Need to review this one",
+      updatedAt: Date.now(),
+    };
+
+    {
+      const db = await openDatabase();
+      await putSession(db, session);
+      await putAnswerComment(db, comment);
+      db.close();
+    }
+
+    {
+      const db = await openDatabase();
+      const restored = await getAnswerComment(
+        db,
+        session.id,
+        comment.questionNumber
+      );
+      expect(restored).not.toBeNull();
+      expect(restored?.comment).toBe("Need to review this one");
+      expect(restored?.questionNumber).toBe(5);
+
+      const all = await listAnswerCommentsBySession(db, session.id);
+      expect(all).toHaveLength(1);
+      expect(all[0].comment).toBe("Need to review this one");
 
       db.close();
     }

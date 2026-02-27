@@ -13,6 +13,7 @@ import {
   putGabaritoEntry,
   listGabaritoEntriesBySession,
 } from "@/storage/indexeddb/gabaritoAdapter";
+import { putAnswerComment } from "@/storage/indexeddb/answerCommentAdapter";
 import { useReviewSession } from "./useReviewSession";
 import type {
   GabaritoEntry,
@@ -374,5 +375,46 @@ describe("useReviewSession - Review acceptance", () => {
       expect(snap.correctCount).toBe(1);
       expect(snap.notGradableCount).toBe(0);
     });
+  });
+
+  it("loads and saves per-answer comments", async () => {
+    const sessionId = "review-test-session";
+    const session = mkSession({ id: sessionId });
+    const m = mkMarker({ id: "m1", questionNumber: 1, answerToken: "A" });
+    const g = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putMarker(db, m);
+    await putGabaritoEntry(db, g);
+    await putAnswerComment(db, {
+      id: "comment-1",
+      sessionId,
+      questionNumber: 1,
+      comment: "Existing note",
+      updatedAt: Date.now(),
+    });
+    db.close();
+
+    const { result } = renderHook(() => useReviewSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.snapshot).not.toBeNull();
+    });
+
+    expect(result.current.getCommentByQuestion(1)).toBe("Existing note");
+    expect(result.current.getCommentByQuestion(2)).toBeNull();
+
+    await act(async () => {
+      await result.current.saveAnswerComment(1, "Updated note");
+    });
+
+    expect(result.current.getCommentByQuestion(1)).toBe("Updated note");
+
+    await act(async () => {
+      await result.current.saveAnswerComment(2, "New comment");
+    });
+
+    expect(result.current.getCommentByQuestion(2)).toBe("New comment");
   });
 });

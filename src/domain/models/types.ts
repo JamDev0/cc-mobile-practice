@@ -95,3 +95,12 @@ export interface ReviewRow {
   gabaritoToken: AnswerToken | null;
   status: RowStatus;
 }
+
+/** Per-answer review comment. Review-only; must not appear in PDF solve view. */
+export interface AnswerComment {
+  id: string;
+  sessionId: string;
+  questionNumber: number;
+  comment: string;
+  updatedAt: number;
+}

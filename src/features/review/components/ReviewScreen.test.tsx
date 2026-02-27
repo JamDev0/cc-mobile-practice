@@ -175,6 +175,58 @@ describe("ReviewScreen - IRG-09, IRG-10", () => {
   });
 });
 
+describe("ReviewScreen - Per-answer comments", () => {
+  beforeEach(async () => {
+    cleanup();
+    await deleteDB(DB_NAME);
+  });
+
+  it("expandable comment row: toggle shows textarea, blur saves and collapses", async () => {
+    const sessionId = "review-screen-test";
+    const session = mkSession({ id: sessionId });
+    const marker = mkMarker({ id: "m1", questionNumber: 1, answerToken: "A" });
+    const gabarito = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putMarker(db, marker);
+    await putGabaritoEntry(db, gabarito);
+    db.close();
+
+    const onRequestJump = vi.fn();
+    render(<ReviewScreen sessionId={sessionId} onRequestJump={onRequestJump} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const commentToggle = within(screen.getByRole("table")).getByTestId(
+      "comment-toggle-Q1"
+    );
+    expect(commentToggle).toHaveAttribute("aria-label", "Add comment for question 1");
+
+    await userEvent.click(commentToggle);
+
+    const textarea = screen.getByTestId("comment-textarea-Q1");
+    expect(textarea).toBeInTheDocument();
+    expect(textarea).toHaveAttribute("placeholder", "Add a comment...");
+
+    await userEvent.type(textarea, "Need to review");
+    await userEvent.tab();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("comment-textarea-Q1")).not.toBeInTheDocument();
+    });
+
+    await userEvent.click(commentToggle);
+
+    await waitFor(() => {
+      const restored = screen.getByTestId("comment-textarea-Q1");
+      expect(restored).toHaveValue("Need to review");
+    });
+  });
+});
+
 describe("ReviewScreen - RDA (Delete user answer)", () => {
   beforeEach(async () => {
     cleanup();

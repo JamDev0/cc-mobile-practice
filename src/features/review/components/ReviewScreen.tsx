@@ -17,6 +17,47 @@ const ROW_STATUS_LABELS: Record<RowStatus, string> = {
   not_gradable: "?",
 };
 
+interface CommentTextareaProps {
+  questionNumber: number;
+  initialValue: string;
+  onSave: (questionNumber: number, comment: string) => Promise<void>;
+  onBlur: () => void;
+}
+
+function CommentTextarea({
+  questionNumber,
+  initialValue,
+  onSave,
+  onBlur,
+}: CommentTextareaProps) {
+  const [value, setValue] = useState(initialValue);
+  const handleBlur = useCallback(() => {
+    void onSave(questionNumber, value);
+    onBlur();
+  }, [questionNumber, value, onSave, onBlur]);
+
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleBlur}
+      placeholder="Add a comment..."
+      aria-label={`Comment for question ${questionNumber}`}
+      data-testid={`comment-textarea-Q${questionNumber}`}
+      rows={3}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "0.5rem 0.75rem",
+        border: "1px solid #e5e7eb",
+        borderRadius: 6,
+        fontSize: "0.875rem",
+        resize: "vertical",
+      }}
+    />
+  );
+}
+
 function StatusBadge({ status }: { status: RowStatus }) {
   const label = ROW_STATUS_LABELS[status];
   const colors: Record<RowStatus, { bg: string; fg: string }> = {
@@ -304,6 +345,8 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     writeError,
     sessionNotFound,
     getGabaritoEntryByQuestion,
+    getCommentByQuestion,
+    saveAnswerComment,
     saveGabaritoEntry,
     deleteGabaritoEntry,
     deleteUserMarker,
@@ -325,6 +368,9 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     markerId: string;
     questionNumber: number;
   } | null>(null);
+  const [expandedCommentRow, setExpandedCommentRow] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     if (session && snapshot && !sessionNotFound) {
@@ -630,14 +676,22 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
               >
                 Delete
               </th>
+              <th
+                style={{
+                  padding: "0.75rem 1rem",
+                  width: 80,
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}
+              >
+                Comment
+              </th>
             </tr>
           </thead>
           <tbody>
             {snapshot.rows.map((row) => (
-              <tr
-                key={row.questionNumber}
-                style={{ borderBottom: "1px solid #f3f4f6" }}
-              >
+              <React.Fragment key={row.questionNumber}>
+              <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
                 <td
                   style={{
                     padding: "0.75rem 1rem",
@@ -754,7 +808,70 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                     <span style={{ color: "#9ca3af", fontSize: "0.75rem" }}>—</span>
                   )}
                 </td>
+                <td
+                  style={{
+                    padding: "0.75rem 1rem",
+                    textAlign: "center",
+                    verticalAlign: "middle",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedCommentRow((prev) =>
+                        prev === row.questionNumber ? null : row.questionNumber
+                      )
+                    }
+                    aria-expanded={expandedCommentRow === row.questionNumber}
+                    aria-label={
+                      getCommentByQuestion(row.questionNumber)
+                        ? `Edit comment for question ${row.questionNumber}`
+                        : `Add comment for question ${row.questionNumber}`
+                    }
+                    data-testid={`comment-toggle-Q${row.questionNumber}`}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      minWidth: 44,
+                      minHeight: 44,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.875rem",
+                      color: "#6b7280",
+                    }}
+                  >
+                    {getCommentByQuestion(row.questionNumber) ? "✎" : "+"}
+                  </button>
+                </td>
               </tr>
+              {expandedCommentRow === row.questionNumber && (
+                <tr
+                  key={`comment-${row.questionNumber}`}
+                  style={{ borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: "0 1rem 0.75rem 1rem",
+                      background: "#f9fafb",
+                      verticalAlign: "top",
+                    }}
+                  >
+                    <CommentTextarea
+                      questionNumber={row.questionNumber}
+                      initialValue={
+                        getCommentByQuestion(row.questionNumber) ?? ""
+                      }
+                      onSave={saveAnswerComment}
+                      onBlur={() => setExpandedCommentRow(null)}
+                    />
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
