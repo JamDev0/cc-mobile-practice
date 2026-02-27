@@ -4,6 +4,13 @@
   margin: 0;
 }
 
+/* Spec 02 §12: Motion safety - respect reduced-motion for marker highlight */
+@media (prefers-reduced-motion: reduce) {
+  .marker-dot {
+    transition: none !important;
+  }
+}
+
 html,
 body {
   max-width: 100vw;

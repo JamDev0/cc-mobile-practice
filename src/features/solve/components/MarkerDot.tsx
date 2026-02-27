@@ -105,6 +105,7 @@ export function MarkerDot({
 
   return (
     <div
+      className="marker-dot"
       role="button"
       tabIndex={0}
       aria-label={`Marker question ${marker.questionNumber}, answer ${token}${
