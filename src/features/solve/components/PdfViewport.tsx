@@ -77,6 +77,7 @@ export function PdfViewport({
     latestClientY: number;
     timeoutId: ReturnType<typeof setTimeout> | null;
     cancelled: boolean;
+    triggered: boolean;
   } | null>(null);
   const [pageDimensions, setPageDimensions] = useState<
     Map<number, { width: number; height: number }>
@@ -159,6 +160,9 @@ export function PdfViewport({
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (longPressRef.current) return;
 
+      // Prevent native text selection / callout during long-press.
+      e.preventDefault();
+
       const targetEl = e.currentTarget;
       const dims =
         pageDimensions.get(pageNumber) ?? {
@@ -173,6 +177,11 @@ export function PdfViewport({
       const timeoutId = setTimeout(() => {
         const state = longPressRef.current;
         if (!state || state.cancelled) return;
+        // Important: release capture so the radial overlay can own move/up events.
+        if (typeof targetEl.releasePointerCapture === "function") {
+          targetEl.releasePointerCapture(state.pointerId);
+        }
+        state.triggered = true;
         const rect = targetEl.getBoundingClientRect();
         const clickX = state.latestClientX - rect.left;
         const clickY = state.latestClientY - rect.top;
@@ -198,6 +207,7 @@ export function PdfViewport({
         latestClientY: e.clientY,
         timeoutId,
         cancelled: false,
+        triggered: false,
       };
     },
     [pageDimensions, onPageTap]
@@ -209,8 +219,10 @@ export function PdfViewport({
       if (!state) return;
       if (state.pageNumber !== pageNumber) return;
       if (state.pointerId !== e.pointerId) return;
+      e.preventDefault();
       state.latestClientX = e.clientX;
       state.latestClientY = e.clientY;
+      if (state.triggered) return;
       const dx = e.clientX - state.startClientX;
       const dy = e.clientY - state.startClientY;
       if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_THRESHOLD_PX) {
@@ -331,7 +343,9 @@ export function PdfViewport({
               style={{
                 cursor: "pointer",
                 position: "relative",
-                touchAction: "pan-y",
+                touchAction: pendingMarker ? "none" : "pan-y",
+                userSelect: "none",
+                WebkitUserSelect: "none",
               }}
             >
               <Page

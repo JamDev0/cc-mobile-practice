@@ -199,6 +199,8 @@ export function RadialPickerPortal({
         zIndex: RADIAL_OVERLAY_Z_INDEX,
         pointerEvents: "auto",
         touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -247,6 +249,8 @@ export function RadialPickerPortal({
             justifyContent: "center",
             fontSize: 14,
             fontWeight: 600,
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
         >
           {questionNumber}
