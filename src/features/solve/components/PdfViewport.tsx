@@ -163,9 +163,6 @@ export function PdfViewport({
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (longPressRef.current) return;
 
-      // Prevent native text selection / callout during long-press.
-      e.preventDefault();
-
       const targetEl = e.currentTarget;
       const dims =
         pageDimensions.get(pageNumber) ?? {
@@ -173,17 +170,10 @@ export function PdfViewport({
           height: targetEl.getBoundingClientRect().height,
         };
       const pointerType = e.pointerType;
-      if (typeof e.currentTarget.setPointerCapture === "function") {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }
 
       const timeoutId = setTimeout(() => {
         const state = longPressRef.current;
         if (!state || state.cancelled) return;
-        // Important: release capture so the radial overlay can own move/up events.
-        if (typeof targetEl.releasePointerCapture === "function") {
-          targetEl.releasePointerCapture(state.pointerId);
-        }
         state.triggered = true;
         const rect = targetEl.getBoundingClientRect();
         const clickX = state.latestClientX - rect.left;
@@ -302,7 +292,6 @@ export function PdfViewport({
       if (!state) return;
       if (state.pageNumber !== pageNumber) return;
       if (state.pointerId !== e.pointerId) return;
-      e.preventDefault();
       state.latestClientX = e.clientX;
       state.latestClientY = e.clientY;
       if (state.triggered) return;
@@ -320,9 +309,6 @@ export function PdfViewport({
     (_pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
       const state = longPressRef.current;
       if (!state || state.pointerId !== e.pointerId) return;
-      if (typeof e.currentTarget.releasePointerCapture === "function") {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
       cancelLongPress();
     },
     [cancelLongPress]
@@ -370,6 +356,10 @@ export function PdfViewport({
         overscrollBehavior: "none",
       }}
       onScroll={() => {
+        // If user scrolls normally, cancel any pending long-press detection.
+        if (longPressRef.current && !longPressRef.current.triggered) {
+          cancelLongPress();
+        }
         if (disableScroll) return;
         if (!containerRef.current || pageCount == null) return;
         const el = containerRef.current;
