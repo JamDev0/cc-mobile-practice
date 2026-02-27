@@ -87,7 +87,7 @@ export function SolveScreen({
     const marker = markers.find((m) => m.id === jumpRequest.markerId);
     if (!marker) {
       setJumpError("Marker not found");
-      onJumpRequestConsumed();
+      onJumpRequestConsumed?.();
       const t = setTimeout(() => setJumpError(null), 3000);
       return () => clearTimeout(t);
     }
@@ -98,7 +98,7 @@ export function SolveScreen({
     if (jumpRequest.openEditMarkerId && marker.id === jumpRequest.openEditMarkerId) {
       openEditMarker(marker);
     }
-    onJumpRequestConsumed();
+    // Per spec 09 §4.3: consume only after scroll attempt (handled in onScrollAttempted)
 
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
     highlightTimeoutRef.current = setTimeout(() => {
@@ -122,6 +122,14 @@ export function SolveScreen({
     setHighlightedMarkerId,
     openEditMarker,
   ]);
+
+  const handleScrollAttempted = useCallback(
+    (success: boolean) => {
+      if (!success) setJumpError("Could not scroll to target");
+      onJumpRequestConsumed?.();
+    },
+    [onJumpRequestConsumed]
+  );
 
   const handlePageTap = useCallback(
     (
@@ -348,6 +356,7 @@ export function SolveScreen({
         onActivePageChange={setActivePage}
         highlightedMarkerId={highlightedMarkerId}
         scrollToPageNumber={scrollToPageNumber}
+        onScrollAttempted={handleScrollAttempted}
       />
       {pendingMarker && pendingAnchor && (
         <RadialPickerPortal

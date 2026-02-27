@@ -35,11 +35,16 @@ interface PdfViewportProps {
   highlightedMarkerId: string | null;
   /** When set, scrolls this page into view (for jump-to-marker). */
   scrollToPageNumber: number | null;
+  /** Called when scroll attempt completes (success or retries exhausted). Per spec 09 §4.3. */
+  onScrollAttempted?: (success: boolean) => void;
 }
 
 /** Per spec 06 §4.3.3: fallback to fully rendered page list for V1 scroll continuity.
  * Windowing blocked natural scrolling past early pages. */
 const RENDER_WINDOW_FALLBACK = 2;
+
+/** Per spec 09 §4.3: bounded retries when page node not yet mounted. */
+const SCROLL_RETRY_MAX = 60;
 
 export function PdfViewport({
   pdfBlob,
@@ -52,6 +57,7 @@ export function PdfViewport({
   onActivePageChange,
   highlightedMarkerId,
   scrollToPageNumber,
+  onScrollAttempted,
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRectRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
@@ -60,14 +66,39 @@ export function PdfViewport({
   >(new Map());
 
   useEffect(() => {
-    if (scrollToPageNumber == null || !containerRef.current) return;
-    const pageEl = containerRef.current.querySelector(
-      `[data-page-number="${scrollToPageNumber}"]`
-    );
-    if (pageEl) {
-      pageEl.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (scrollToPageNumber == null) return;
+    if (!pdfBlob) {
+      onScrollAttempted?.(false);
+      return;
     }
-  }, [scrollToPageNumber]);
+    if (!containerRef.current) return;
+    const targetPage = scrollToPageNumber;
+    let attempts = 0;
+    let cancelled = false;
+
+    const tryScroll = () => {
+      if (cancelled) return;
+      attempts += 1;
+      const pageEl = containerRef.current?.querySelector(
+        `[data-page-number="${targetPage}"]`
+      );
+      if (pageEl) {
+        pageEl.scrollIntoView({ block: "center", behavior: "smooth" });
+        onScrollAttempted?.(true);
+        return;
+      }
+      if (attempts >= SCROLL_RETRY_MAX) {
+        onScrollAttempted?.(false);
+        return;
+      }
+      requestAnimationFrame(tryScroll);
+    };
+
+    requestAnimationFrame(tryScroll);
+    return () => {
+      cancelled = true;
+    };
+  }, [scrollToPageNumber, onScrollAttempted, pdfBlob]);
 
   const handlePageLoadSuccess = useCallback(
     ({ pageNumber, width, height }: { pageNumber: number; width: number; height: number }) => {
