@@ -32,6 +32,7 @@ export function MarkerDot({
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
   const lastDragPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
+  const ignoreNextClickRef = useRef(false);
 
   const displayX = dragPos?.xPct ?? marker.xPct;
   const displayY = dragPos?.yPct ?? marker.yPct;
@@ -45,7 +46,9 @@ export function MarkerDot({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.stopPropagation();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      if (typeof e.currentTarget.setPointerCapture === "function") {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
       dragStartRef.current = { x: e.clientX, y: e.clientY };
       didDragRef.current = false;
     },
@@ -79,7 +82,9 @@ export function MarkerDot({
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      if (typeof e.currentTarget.releasePointerCapture === "function") {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
       dragStartRef.current = null;
 
       const committed = lastDragPosRef.current;
@@ -87,12 +92,11 @@ export function MarkerDot({
       setDragPos(null);
 
       if (didDragRef.current && committed) {
+        ignoreNextClickRef.current = true;
         onDragEnd(committed.xPct, committed.yPct);
-      } else if (!didDragRef.current) {
-        onClick();
       }
     },
-    [onDragEnd, onClick]
+    [onDragEnd]
   );
 
   const handlePointerCancel = useCallback(() => {
@@ -106,6 +110,7 @@ export function MarkerDot({
   return (
     <div
       className="marker-dot"
+      data-marker-id={marker.id}
       role="button"
       tabIndex={0}
       aria-label={`Marker question ${marker.questionNumber}, answer ${token}${
@@ -115,6 +120,14 @@ export function MarkerDot({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (ignoreNextClickRef.current) {
+          ignoreNextClickRef.current = false;
+          return;
+        }
+        onClick();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

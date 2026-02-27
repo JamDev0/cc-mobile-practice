@@ -66,6 +66,7 @@ export function SolveScreen({
   const [scrollToPageNumber, setScrollToPageNumber] = useState<number | null>(
     null
   );
+  const [scrollToMarkerId, setScrollToMarkerId] = useState<string | null>(null);
   const [jumpError, setJumpError] = useState<string | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -95,6 +96,7 @@ export function SolveScreen({
     setActivePage(jumpRequest.pageNumber);
     setHighlightedMarkerId(jumpRequest.markerId);
     setScrollToPageNumber(jumpRequest.pageNumber);
+    setScrollToMarkerId(jumpRequest.markerId);
     if (jumpRequest.openEditMarkerId && marker.id === jumpRequest.openEditMarkerId) {
       openEditMarker(marker);
     }
@@ -104,6 +106,7 @@ export function SolveScreen({
     highlightTimeoutRef.current = setTimeout(() => {
       setHighlightedMarkerId(null);
       setScrollToPageNumber(null);
+      setScrollToMarkerId(null);
       highlightTimeoutRef.current = null;
     }, HIGHLIGHT_PULSE_MS);
 
@@ -356,6 +359,7 @@ export function SolveScreen({
         onActivePageChange={setActivePage}
         highlightedMarkerId={highlightedMarkerId}
         scrollToPageNumber={scrollToPageNumber}
+        scrollToMarkerId={scrollToMarkerId}
         onScrollAttempted={handleScrollAttempted}
       />
       {pendingMarker && pendingAnchor && (

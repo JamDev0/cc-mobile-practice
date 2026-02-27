@@ -35,6 +35,8 @@ interface PdfViewportProps {
   highlightedMarkerId: string | null;
   /** When set, scrolls this page into view (for jump-to-marker). */
   scrollToPageNumber: number | null;
+  /** Optional marker id to scroll into view when available. */
+  scrollToMarkerId?: string | null;
   /** Called when scroll attempt completes (success or retries exhausted). Per spec 09 §4.3. */
   onScrollAttempted?: (success: boolean) => void;
 }
@@ -57,6 +59,7 @@ export function PdfViewport({
   onActivePageChange,
   highlightedMarkerId,
   scrollToPageNumber,
+  scrollToMarkerId,
   onScrollAttempted,
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +82,18 @@ export function PdfViewport({
     const tryScroll = () => {
       if (cancelled) return;
       attempts += 1;
+      const markerSelector =
+        scrollToMarkerId != null
+          ? `[data-marker-id="${scrollToMarkerId.replace(/"/g, '\\"')}"]`
+          : null;
+      const markerEl = markerSelector
+        ? containerRef.current?.querySelector(markerSelector)
+        : null;
+      if (markerEl) {
+        markerEl.scrollIntoView({ block: "center", behavior: "smooth" });
+        onScrollAttempted?.(true);
+        return;
+      }
       const pageEl = containerRef.current?.querySelector(
         `[data-page-number="${targetPage}"]`
       );
@@ -98,7 +113,7 @@ export function PdfViewport({
     return () => {
       cancelled = true;
     };
-  }, [scrollToPageNumber, onScrollAttempted, pdfBlob]);
+  }, [scrollToPageNumber, scrollToMarkerId, onScrollAttempted, pdfBlob]);
 
   const handlePageLoadSuccess = useCallback(
     ({ pageNumber, width, height }: { pageNumber: number; width: number; height: number }) => {
@@ -111,8 +126,9 @@ export function PdfViewport({
     []
   );
 
-  const handlePageClick = useCallback(
-    (pageNumber: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePagePointerDown = useCallback(
+    (pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       const target = e.currentTarget;
       const rect = target.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
@@ -214,9 +230,12 @@ export function PdfViewport({
               marginBottom: "1rem",
             }}
             data-page-number={pageNum}
+            ref={(el) => {
+              if (el) pageRectRefs.current.set(pageNum, el);
+            }}
           >
             <div
-              onClick={handlePageClick(pageNum)}
+              onPointerDown={handlePagePointerDown(pageNum)}
               style={{
                 cursor: "pointer",
                 position: "relative",
@@ -238,9 +257,6 @@ export function PdfViewport({
               />
             </div>
             <div
-              ref={(el) => {
-                if (el) pageRectRefs.current.set(pageNum, el);
-              }}
               style={{
                 position: "absolute",
                 top: 0,

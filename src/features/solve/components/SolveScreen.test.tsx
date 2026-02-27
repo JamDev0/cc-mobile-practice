@@ -37,6 +37,7 @@ vi.mock("./PdfViewport", () => {
     return React.createElement("div", {
       "data-testid": "pdf-viewport-mock",
       "data-scroll-to-page": String(props.scrollToPageNumber ?? ""),
+      "data-scroll-to-marker-id": String(props.scrollToMarkerId ?? ""),
       "data-highlighted-marker-id": String(props.highlightedMarkerId ?? ""),
     });
   };
@@ -45,7 +46,8 @@ vi.mock("./PdfViewport", () => {
 
 async function seedSessionWithMarker(
   sessionId: string,
-  marker: Marker
+  marker: Marker,
+  pageCount = 2
 ) {
   const now = Date.now();
   const session: Session = {
@@ -57,7 +59,7 @@ async function seedSessionWithMarker(
     pdfMimeType: "application/pdf",
     pdfByteLength: 100,
     pdfSha256: "test",
-    pageCount: 2,
+    pageCount,
     lastInsertedQuestionNumber: null,
     ui: DEFAULT_UI,
   };
@@ -281,6 +283,7 @@ describe("SolveScreen - S-UI-04 jump-to-marker", () => {
     await waitFor(() => {
       const viewport = screen.getByTestId("pdf-viewport-mock");
       expect(viewport).toHaveAttribute("data-scroll-to-page", "1");
+      expect(viewport).toHaveAttribute("data-scroll-to-marker-id", marker1.id);
       expect(viewport).toHaveAttribute("data-highlighted-marker-id", marker1.id);
     });
 
@@ -301,9 +304,54 @@ describe("SolveScreen - S-UI-04 jump-to-marker", () => {
     await waitFor(() => {
       const viewport = screen.getByTestId("pdf-viewport-mock");
       expect(viewport).toHaveAttribute("data-scroll-to-page", "2");
+      expect(viewport).toHaveAttribute("data-scroll-to-marker-id", marker2.id);
       expect(viewport).toHaveAttribute("data-highlighted-marker-id", marker2.id);
     });
 
     expect(onJumpRequestConsumed).toHaveBeenCalled();
+  });
+
+  it("RJT: Jump to last-page marker keeps marker as scroll target", async () => {
+    const sessionId = "jump-end-page-session";
+    const marker: Marker = {
+      id: "m-end",
+      sessionId,
+      pageNumber: 30,
+      xPct: 0.2,
+      yPct: 0.8,
+      questionNumber: 30,
+      answerToken: "E",
+      status: "valid",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await seedSessionWithMarker(sessionId, marker, 30);
+
+    const onJumpRequestConsumed = vi.fn();
+    render(
+      <SolveScreen
+        sessionId={sessionId}
+        jumpRequest={{
+          sessionId,
+          markerId: marker.id,
+          pageNumber: 30,
+        }}
+        onJumpRequestConsumed={onJumpRequestConsumed}
+      />
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await waitFor(() => {
+      const viewport = screen.getByTestId("pdf-viewport-mock");
+      expect(viewport).toHaveAttribute("data-scroll-to-page", "30");
+      expect(viewport).toHaveAttribute("data-scroll-to-marker-id", marker.id);
+      expect(viewport).toHaveAttribute("data-highlighted-marker-id", marker.id);
+    });
   });
 });
