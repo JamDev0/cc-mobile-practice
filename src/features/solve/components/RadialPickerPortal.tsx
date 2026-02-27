@@ -197,17 +197,30 @@ export function RadialPickerPortal({
     [getPositionFromClient, getTokenAtAngle]
   );
 
-  const handleTouchEndOrCancel = useCallback(() => {
-    const id = activePointerRef.current;
-    if (id == null) return;
-    activePointerRef.current = null;
-    const token = previewToken;
-    if (token == null) {
-      settleOnce(settledRef, onCancel);
-    } else {
-      settleOnce(settledRef, () => onSelect(token));
-    }
-  }, [onCancel, onSelect, previewToken]);
+  const handleTouchEndOrCancel = useCallback(
+    (e: React.TouchEvent) => {
+      const id = activePointerRef.current;
+      if (id == null) return;
+      activePointerRef.current = null;
+      const releasedTouch = Array.from(e.changedTouches).find(
+        (t) => t.identifier === id
+      );
+      if (releasedTouch) {
+        const pos = getPositionFromClient(releasedTouch.clientX, releasedTouch.clientY);
+        if (pos && pos.dist < INNER_RADIUS) {
+          settleOnce(settledRef, onCancel);
+          return;
+        }
+      }
+      const token = previewToken;
+      if (token == null) {
+        settleOnce(settledRef, onCancel);
+      } else {
+        settleOnce(settledRef, () => onSelect(token));
+      }
+    },
+    [getPositionFromClient, onCancel, onSelect, previewToken]
+  );
 
   const cx = OUTER_RADIUS;
   const cy = OUTER_RADIUS;
@@ -259,8 +272,8 @@ export function RadialPickerPortal({
       onPointerCancel={handlePointerCancel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEndOrCancel}
-      onTouchCancel={handleTouchEndOrCancel}
+      onTouchEnd={(e) => handleTouchEndOrCancel(e)}
+      onTouchCancel={(e) => handleTouchEndOrCancel(e)}
       onPointerLeave={() => setPreviewToken(null)}
     >
       <div

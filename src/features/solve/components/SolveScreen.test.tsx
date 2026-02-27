@@ -39,6 +39,7 @@ vi.mock("./PdfViewport", () => {
       "data-scroll-to-page": String(props.scrollToPageNumber ?? ""),
       "data-scroll-to-marker-id": String(props.scrollToMarkerId ?? ""),
       "data-highlighted-marker-id": String(props.highlightedMarkerId ?? ""),
+      "data-disable-scroll": String(props.disableScroll ?? false),
     });
   };
   return { PdfViewport: MockPdfViewport };

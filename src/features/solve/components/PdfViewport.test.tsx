@@ -116,6 +116,48 @@ describe("PdfViewport interactions", () => {
     expect(onPageTap).toHaveBeenCalledTimes(0);
   });
 
+  it("disables scroll when disableScroll prop is true", () => {
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={1}
+        onPageCountKnown={() => {}}
+        onPageTap={() => {}}
+        renderMarkerOverlay={() => null}
+        pendingMarker={{ pageNumber: 1, xPct: 0.5, yPct: 0.5, suggestedQuestionNumber: 1, selectedToken: null }}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+        disableScroll
+      />
+    );
+    const viewport = screen.getByTestId("pdf-viewport-scroll");
+    const style = viewport.getAttribute("style") ?? "";
+    expect(style).toContain("overflow: hidden");
+  });
+
+  it("allows scroll when disableScroll is false", () => {
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={1}
+        onPageCountKnown={() => {}}
+        onPageTap={() => {}}
+        renderMarkerOverlay={() => null}
+        pendingMarker={null}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+        disableScroll={false}
+      />
+    );
+    const viewport = screen.getByTestId("pdf-viewport-scroll");
+    const style = viewport.getAttribute("style") ?? "";
+    expect(style).toContain("overflow: auto");
+  });
+
   it("jump prefers marker target when marker is mounted", async () => {
     vi.useRealTimers();
     const onScrollAttempted = vi.fn();

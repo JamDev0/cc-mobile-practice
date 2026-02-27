@@ -33,6 +33,8 @@ export function MarkerDot({
   const didDragRef = useRef(false);
   const lastDragPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
   const ignoreNextClickRef = useRef(false);
+  const rafIdRef = useRef<number | null>(null);
+  const pendingPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
 
   const displayX = dragPos?.xPct ?? marker.xPct;
   const displayY = dragPos?.yPct ?? marker.yPct;
@@ -74,7 +76,14 @@ export function MarkerDot({
         const { xPct, yPct } = tapToPct(relX, relY, rect.width, rect.height);
         const pos = { xPct, yPct };
         lastDragPosRef.current = pos;
-        setDragPos(pos);
+        pendingPosRef.current = pos;
+        if (rafIdRef.current == null) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = null;
+            const pending = pendingPosRef.current;
+            if (pending) setDragPos(pending);
+          });
+        }
       }
     },
     [getPageRect]
@@ -86,6 +95,11 @@ export function MarkerDot({
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
       dragStartRef.current = null;
+      if (rafIdRef.current != null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      pendingPosRef.current = null;
 
       const committed = lastDragPosRef.current;
       lastDragPosRef.current = null;
@@ -101,6 +115,11 @@ export function MarkerDot({
 
   const handlePointerCancel = useCallback(() => {
     dragStartRef.current = null;
+    if (rafIdRef.current != null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    pendingPosRef.current = null;
     setDragPos(null);
   }, []);
 
@@ -136,8 +155,10 @@ export function MarkerDot({
       }}
       style={{
         position: "absolute",
-        left: pixelX - 12,
-        top: pixelY - 12,
+        left: 0,
+        top: 0,
+        transform: `translate(${pixelX - 12}px, ${pixelY - 12}px)`,
+        willChange: dragPos ? "transform" : "auto",
         width: 24,
         height: 24,
         minWidth: 24,

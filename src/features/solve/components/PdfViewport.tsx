@@ -54,6 +54,17 @@ const SCROLL_RETRY_MAX = 60;
 const LONG_PRESS_MS = 150;
 const LONG_PRESS_MOVE_THRESHOLD_PX = 10;
 
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+const ZOOM_STEP = 0.15;
+
+function pinchDistance(touches: { length: number; 0?: Touch; 1?: Touch }): number {
+  if (touches.length < 2 || !touches[0] || !touches[1]) return 0;
+  const a = touches[0];
+  const b = touches[1];
+  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+}
+
 export function PdfViewport({
   pdfBlob,
   pageCount,
@@ -85,6 +96,11 @@ export function PdfViewport({
   const [pageDimensions, setPageDimensions] = useState<
     Map<number, { width: number; height: number }>
   >(new Map());
+  const [scale, setScale] = useState(1);
+  const pinchRef = useRef<{
+    initialDistance: number;
+    initialScale: number;
+  } | null>(null);
 
   useEffect(() => {
     if (scrollToPageNumber == null) return;
@@ -211,6 +227,7 @@ export function PdfViewport({
       // Prefer pointer events on browsers that support them.
       if (typeof window !== "undefined" && "PointerEvent" in window) return;
       if (longPressRef.current) return;
+      if (e.touches.length >= 2) return;
       const t = e.touches[0];
       if (!t) return;
       e.preventDefault();
@@ -259,6 +276,7 @@ export function PdfViewport({
   const handlePageTouchMove = useCallback(
     (pageNumber: number) => (e: React.TouchEvent<HTMLDivElement>) => {
       if (typeof window !== "undefined" && "PointerEvent" in window) return;
+      if (e.touches.length >= 2) return;
       const state = longPressRef.current;
       if (!state) return;
       if (state.pageNumber !== pageNumber) return;
@@ -314,6 +332,60 @@ export function PdfViewport({
     [cancelLongPress]
   );
 
+  const handleContainerTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && !pinchRef.current) {
+      pinchRef.current = {
+        initialDistance: pinchDistance(e.touches),
+        initialScale: scale,
+      };
+    }
+  }, [scale]);
+
+  const handleContainerTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) return;
+      e.preventDefault();
+      const dist = pinchDistance(e.touches);
+      if (dist === 0) return;
+      const { initialDistance, initialScale } = pinchRef.current;
+      if (initialDistance === 0) return;
+      const ratio = dist / initialDistance;
+      const next = Math.max(
+        ZOOM_MIN,
+        Math.min(ZOOM_MAX, initialScale * ratio)
+      );
+      setScale(next);
+    },
+    []
+  );
+
+  const handleContainerTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      setScale((s) =>
+        Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, s + delta))
+      );
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
+
+  const baseWidth = Math.min(
+    containerRef.current?.clientWidth ?? 400,
+    400
+  );
+  const scaledWidth = baseWidth * scale;
+
   if (!pdfBlob) {
     return (
       <div
@@ -352,9 +424,13 @@ export function PdfViewport({
         flexDirection: "column",
         alignItems: "center",
         padding: "1rem",
-        touchAction: disableScroll ? "none" : "pan-y",
+        touchAction: disableScroll ? "none" : "manipulation",
         overscrollBehavior: "none",
       }}
+      onTouchStart={handleContainerTouchStart}
+      onTouchMove={handleContainerTouchMove}
+      onTouchEnd={handleContainerTouchEnd}
+      onTouchCancel={handleContainerTouchEnd}
       onScroll={() => {
         // If user scrolls normally, cancel any pending long-press detection.
         if (longPressRef.current && !longPressRef.current.triggered) {
@@ -434,10 +510,7 @@ export function PdfViewport({
             >
               <Page
                 pageNumber={pageNum}
-                width={Math.min(
-                  containerRef.current?.clientWidth ?? 400,
-                  400
-                )}
+                width={scaledWidth}
                 onLoadSuccess={(page) => {
                   handlePageLoadSuccess({
                     pageNumber: pageNum,

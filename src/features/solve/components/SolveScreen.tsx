@@ -8,7 +8,7 @@ import { RadialPickerPortal } from "./RadialPickerPortal";
 import { EditMarkerSheet } from "./EditMarkerSheet";
 import { useSolveSession } from "../hooks/useSolveSession";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
-import type { AnswerToken } from "@/domain/models/types";
+import type { AnswerToken, Marker } from "@/domain/models/types";
 import type { JumpRequest } from "../types";
 
 const HIGHLIGHT_PULSE_MS = 1000;
@@ -211,6 +211,24 @@ export function SolveScreen({
     [updateMarkerPosition]
   );
 
+  const handleMarkerClick = useCallback(
+    (marker: Marker) => {
+      setActivePage(marker.pageNumber);
+      setHighlightedMarkerId(marker.id);
+      setScrollToPageNumber(marker.pageNumber);
+      setScrollToMarkerId(marker.id);
+      openEditMarker(marker);
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedMarkerId(null);
+        setScrollToPageNumber(null);
+        setScrollToMarkerId(null);
+        highlightTimeoutRef.current = null;
+      }, HIGHLIGHT_PULSE_MS);
+    },
+    [setActivePage, setHighlightedMarkerId, openEditMarker]
+  );
+
   const renderMarkerOverlay = useCallback(
     (
       pageNumber: number,
@@ -224,7 +242,7 @@ export function SolveScreen({
           pageNumber={pageNumber}
           renderWidth={width}
           renderHeight={height}
-          onMarkerClick={openEditMarker}
+          onMarkerClick={handleMarkerClick}
           onMarkerDragEnd={handleMarkerDragEnd}
           getPageRect={getPageRect}
           highlightedMarkerId={highlightedMarkerId}
@@ -233,7 +251,7 @@ export function SolveScreen({
     },
     [
       markers,
-      openEditMarker,
+      handleMarkerClick,
       handleMarkerDragEnd,
       highlightedMarkerId,
     ]

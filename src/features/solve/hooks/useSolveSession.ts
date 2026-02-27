@@ -202,6 +202,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
 
   const closeEditMarker = useCallback(() => {
     setEditMarker(null);
+    setHighlightedMarkerId(null);
   }, []);
 
   const saveEditMarker = useCallback(

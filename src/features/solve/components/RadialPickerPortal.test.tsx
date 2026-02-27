@@ -150,6 +150,37 @@ describe("RadialPickerPortal - RPS (Spec 11 press-slide-release)", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it("RPS-03-touch: Touch start on slice, release in center - cancels", () => {
+    render(
+      <RadialPickerPortal
+        anchorX={anchorX}
+        anchorY={anchorY}
+        questionNumber={1}
+        onSelect={onSelect}
+        onCancel={onCancel}
+      />
+    );
+    const container = screen.getByTestId("radial-picker-container");
+    const rect = container.getBoundingClientRect();
+    const overlay = screen.getByTestId("radial-picker-overlay");
+
+    const pointA = sliceAPoint(rect.left, rect.top);
+    const dead = deadZonePoint(rect.left, rect.top);
+
+    fireEvent.touchStart(overlay!, {
+      touches: [{ identifier: 1, clientX: pointA.clientX, clientY: pointA.clientY }],
+    });
+    fireEvent.touchMove(overlay!, {
+      touches: [{ identifier: 1, clientX: dead.clientX, clientY: dead.clientY }],
+    });
+    fireEvent.touchEnd(overlay!, {
+      changedTouches: [{ identifier: 1, clientX: dead.clientX, clientY: dead.clientY }],
+    });
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it("RPS-04: Pointer cancel during gesture - cancel once, no commit", () => {
     render(
       <RadialPickerPortal
