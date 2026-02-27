@@ -1,14 +1,19 @@
 ## Build & Run
 
-Succinct rules for how to BUILD the project:
+- `npm install`
+- `npm run dev` — start dev server
+- `npm run build` — production build (if _document error: `rm -rf .next && npm run build`)
 
 ## Validation
 
-Run these after implementing to get immediate feedback:
+- `npm run typecheck` — TypeScript strict check (run after `npm run build` if .next/types missing)
+- `npm run test` — Vitest unit tests
+- `npm run test:e2e` — Playwright viewport smoke tests (mobile + tablet)
+- `npm run build` — full build
 
 ## Operational Notes
 
-Succinct learnings about how to RUN the project:
+- Next.js 14.2.35, App Router, `src/` layout per spec 04.
 
 ### Codebase Patterns
 
