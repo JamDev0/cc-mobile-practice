@@ -83,6 +83,22 @@ export function SolveScreen({
   }, [pendingMarker]);
 
   useEffect(() => {
+    if (!pendingMarker) return;
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    const prevTouchAction = body.style.touchAction;
+    const prevOverscroll = body.style.overscrollBehavior;
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      body.style.overflow = prevOverflow;
+      body.style.touchAction = prevTouchAction;
+      body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, [pendingMarker]);
+
+  useEffect(() => {
     if (session && !sessionNotFound) {
       markViewInteractive("solve");
     }
@@ -376,6 +392,7 @@ export function SolveScreen({
         scrollToPageNumber={scrollToPageNumber}
         scrollToMarkerId={scrollToMarkerId}
         onScrollAttempted={handleScrollAttempted}
+        disableScroll={pendingMarker != null}
       />
       {pendingMarker && pendingAnchor && (
         <RadialPickerPortal

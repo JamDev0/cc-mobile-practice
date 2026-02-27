@@ -41,6 +41,8 @@ interface PdfViewportProps {
   scrollToMarkerId?: string | null;
   /** Called when scroll attempt completes (success or retries exhausted). Per spec 09 §4.3. */
   onScrollAttempted?: (success: boolean) => void;
+  /** When true, disables scrolling (e.g. while radial picker gesture is active). */
+  disableScroll?: boolean;
 }
 
 /** Per spec 06 §4.3.3: fallback to fully rendered page list for V1 scroll continuity.
@@ -65,6 +67,7 @@ export function PdfViewport({
   scrollToPageNumber,
   scrollToMarkerId,
   onScrollAttempted,
+  disableScroll = false,
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRectRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
@@ -213,6 +216,86 @@ export function PdfViewport({
     [pageDimensions, onPageTap]
   );
 
+  const handlePageTouchStart = useCallback(
+    (pageNumber: number) => (e: React.TouchEvent<HTMLDivElement>) => {
+      // Prefer pointer events on browsers that support them.
+      if (typeof window !== "undefined" && "PointerEvent" in window) return;
+      if (longPressRef.current) return;
+      const t = e.touches[0];
+      if (!t) return;
+      e.preventDefault();
+
+      const targetEl = e.currentTarget;
+      const dims =
+        pageDimensions.get(pageNumber) ?? {
+          width: targetEl.getBoundingClientRect().width,
+          height: targetEl.getBoundingClientRect().height,
+        };
+
+      const timeoutId = setTimeout(() => {
+        const state = longPressRef.current;
+        if (!state || state.cancelled) return;
+        state.triggered = true;
+        const rect = targetEl.getBoundingClientRect();
+        const clickX = state.latestClientX - rect.left;
+        const clickY = state.latestClientY - rect.top;
+        const { xPct, yPct } = tapToPct(clickX, clickY, dims.width, dims.height);
+        onPageTap(
+          pageNumber,
+          xPct,
+          yPct,
+          state.latestClientX,
+          state.latestClientY,
+          state.pointerId,
+          "touch"
+        );
+      }, LONG_PRESS_MS);
+
+      longPressRef.current = {
+        pointerId: t.identifier,
+        pageNumber,
+        startClientX: t.clientX,
+        startClientY: t.clientY,
+        latestClientX: t.clientX,
+        latestClientY: t.clientY,
+        timeoutId,
+        cancelled: false,
+        triggered: false,
+      };
+    },
+    [pageDimensions, onPageTap]
+  );
+
+  const handlePageTouchMove = useCallback(
+    (pageNumber: number) => (e: React.TouchEvent<HTMLDivElement>) => {
+      if (typeof window !== "undefined" && "PointerEvent" in window) return;
+      const state = longPressRef.current;
+      if (!state) return;
+      if (state.pageNumber !== pageNumber) return;
+      const t = Array.from(e.touches).find((x) => x.identifier === state.pointerId);
+      if (!t) return;
+      e.preventDefault();
+      state.latestClientX = t.clientX;
+      state.latestClientY = t.clientY;
+      if (state.triggered) return;
+      const dx = t.clientX - state.startClientX;
+      const dy = t.clientY - state.startClientY;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_THRESHOLD_PX) {
+        state.cancelled = true;
+        cancelLongPress();
+      }
+    },
+    [cancelLongPress]
+  );
+
+  const handlePageTouchEndOrCancel = useCallback(
+    (_pageNumber: number) => (_e: React.TouchEvent<HTMLDivElement>) => {
+      if (typeof window !== "undefined" && "PointerEvent" in window) return;
+      cancelLongPress();
+    },
+    [cancelLongPress]
+  );
+
   const handlePagePointerMove = useCallback(
     (pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
       const state = longPressRef.current;
@@ -278,13 +361,16 @@ export function PdfViewport({
       data-testid="pdf-viewport-scroll"
       style={{
         flex: 1,
-        overflow: "auto",
+        overflow: disableScroll ? "hidden" : "auto",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         padding: "1rem",
+        touchAction: disableScroll ? "none" : "pan-y",
+        overscrollBehavior: "none",
       }}
       onScroll={() => {
+        if (disableScroll) return;
         if (!containerRef.current || pageCount == null) return;
         const el = containerRef.current;
         const containerRect = el.getBoundingClientRect();
@@ -340,6 +426,10 @@ export function PdfViewport({
               onPointerMove={handlePagePointerMove(pageNum)}
               onPointerUp={handlePagePointerUpOrCancel(pageNum)}
               onPointerCancel={handlePagePointerUpOrCancel(pageNum)}
+              onTouchStart={handlePageTouchStart(pageNum)}
+              onTouchMove={handlePageTouchMove(pageNum)}
+              onTouchEnd={handlePageTouchEndOrCancel(pageNum)}
+              onTouchCancel={handlePageTouchEndOrCancel(pageNum)}
               style={{
                 cursor: "pointer",
                 position: "relative",

@@ -161,6 +161,54 @@ export function RadialPickerPortal({
     [onCancel]
   );
 
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      if (activePointerRef.current != null) return;
+      const t = e.touches[0];
+      if (!t) return;
+      activePointerRef.current = t.identifier;
+      settledRef.current = false;
+      const pos = getPositionFromClient(t.clientX, t.clientY);
+      if (pos && pos.dist >= INNER_RADIUS) {
+        setPreviewToken(getTokenAtAngle(pos.angle));
+      } else {
+        setPreviewToken(null);
+      }
+    },
+    [getPositionFromClient, getTokenAtAngle]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      const id = activePointerRef.current;
+      if (id == null) return;
+      const t = Array.from(e.touches).find((x) => x.identifier === id);
+      if (!t) return;
+      const pos = getPositionFromClient(t.clientX, t.clientY);
+      if (!pos) return;
+      if (pos.dist < INNER_RADIUS) {
+        setPreviewToken(null);
+      } else {
+        setPreviewToken(getTokenAtAngle(pos.angle));
+      }
+    },
+    [getPositionFromClient, getTokenAtAngle]
+  );
+
+  const handleTouchEndOrCancel = useCallback(() => {
+    const id = activePointerRef.current;
+    if (id == null) return;
+    activePointerRef.current = null;
+    const token = previewToken;
+    if (token == null) {
+      settleOnce(settledRef, onCancel);
+    } else {
+      settleOnce(settledRef, () => onSelect(token));
+    }
+  }, [onCancel, onSelect, previewToken]);
+
   const cx = OUTER_RADIUS;
   const cy = OUTER_RADIUS;
   const slicePaths = TOKENS.map((token, i) => {
@@ -206,6 +254,10 @@ export function RadialPickerPortal({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEndOrCancel}
+      onTouchCancel={handleTouchEndOrCancel}
       onPointerLeave={() => setPreviewToken(null)}
     >
       <div

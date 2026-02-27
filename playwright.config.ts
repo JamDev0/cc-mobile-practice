@@ -23,6 +23,8 @@ export default defineConfig({
       use: {
         browserName: "chromium",
         viewport: { width: 375, height: 667 },
+        isMobile: true,
+        hasTouch: true,
       },
     },
     {
@@ -30,6 +32,7 @@ export default defineConfig({
       use: {
         browserName: "chromium",
         viewport: { width: 768, height: 1024 },
+        hasTouch: true,
       },
     },
   ],

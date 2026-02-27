@@ -48,7 +48,7 @@ async function openRadialByLongPress(page: import("@playwright/test").Page, page
   const clientY = box.y + box.height * 0.55;
   await page.mouse.move(clientX, clientY);
   await page.mouse.down();
-  await page.waitForTimeout(320);
+  await page.waitForTimeout(220);
   await expect(page.getByTestId("radial-picker-overlay")).toBeVisible();
 }
 
