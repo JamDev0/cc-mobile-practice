@@ -19,6 +19,16 @@ const SLICE_ANGLE = (2 * Math.PI) / SLICE_COUNT;
 
 const TOKENS: AnswerToken[] = [...ANSWER_TOKENS];
 
+/** Per spec 11 §5: exactly one of onSelect or onCancel per gesture. */
+function settleOnce(
+  settledRef: { current: boolean },
+  fn: () => void
+): void {
+  if (settledRef.current) return;
+  settledRef.current = true;
+  fn();
+}
+
 export function RadialPickerPortal({
   anchorX,
   anchorY,
@@ -28,6 +38,10 @@ export function RadialPickerPortal({
 }: RadialPickerPortalProps) {
   const [previewToken, setPreviewToken] = useState<AnswerToken | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  /** Track if this gesture has already fired onSelect or onCancel. */
+  const settledRef = useRef(false);
+  const activePointerRef = useRef<number | null>(null);
 
   const getTokenAtAngle = useCallback((angle: number) => {
     const normalized = ((angle + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
@@ -35,9 +49,9 @@ export function RadialPickerPortal({
     return TOKENS[index];
   }, []);
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!containerRef.current) return;
+  const getPositionFromEvent = useCallback(
+    (e: React.PointerEvent): { dist: number; angle: number } | null => {
+      if (!containerRef.current) return null;
       const rect = containerRef.current.getBoundingClientRect();
       const cx = rect.width / 2;
       const cy = rect.height / 2;
@@ -45,33 +59,73 @@ export function RadialPickerPortal({
       const dy = e.clientY - rect.top - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx);
-      if (dist < INNER_RADIUS) {
-        setPreviewToken(null);
+      return { dist, angle };
+    },
+    []
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (activePointerRef.current != null) return;
+      activePointerRef.current = e.pointerId;
+      settledRef.current = false;
+      if (typeof overlayRef.current?.setPointerCapture === "function") {
+        overlayRef.current.setPointerCapture(e.pointerId);
+      }
+      const pos = getPositionFromEvent(e);
+      if (pos && pos.dist >= INNER_RADIUS) {
+        setPreviewToken(getTokenAtAngle(pos.angle));
       } else {
-        setPreviewToken(getTokenAtAngle(angle));
+        setPreviewToken(null);
       }
     },
-    [getTokenAtAngle]
+    [getPositionFromEvent, getTokenAtAngle]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (activePointerRef.current !== e.pointerId) return;
+      if (!containerRef.current) return;
+      const pos = getPositionFromEvent(e);
+      if (!pos) return;
+      if (pos.dist < INNER_RADIUS) {
+        setPreviewToken(null);
+      } else {
+        setPreviewToken(getTokenAtAngle(pos.angle));
+      }
+    },
+    [getPositionFromEvent, getTokenAtAngle]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-      const dx = e.clientX - rect.left - cx;
-      const dy = e.clientY - rect.top - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < INNER_RADIUS) {
-        onCancel();
+      if (activePointerRef.current !== e.pointerId) return;
+      activePointerRef.current = null;
+      if (typeof overlayRef.current?.releasePointerCapture === "function") {
+        overlayRef.current.releasePointerCapture(e.pointerId);
+      }
+      const pos = getPositionFromEvent(e);
+      if (!pos) return;
+      if (pos.dist < INNER_RADIUS) {
+        settleOnce(settledRef, onCancel);
       } else {
-        const angle = Math.atan2(dy, dx);
-        const token = getTokenAtAngle(angle);
-        onSelect(token);
+        const token = getTokenAtAngle(pos.angle);
+        settleOnce(settledRef, () => onSelect(token));
       }
     },
-    [getTokenAtAngle, onCancel, onSelect]
+    [getPositionFromEvent, getTokenAtAngle, onCancel, onSelect]
+  );
+
+  const handlePointerCancel = useCallback(
+    (e: React.PointerEvent) => {
+      if (activePointerRef.current !== e.pointerId) return;
+      activePointerRef.current = null;
+      if (typeof overlayRef.current?.releasePointerCapture === "function") {
+        overlayRef.current.releasePointerCapture(e.pointerId);
+      }
+      settleOnce(settledRef, onCancel);
+    },
+    [onCancel]
   );
 
   const cx = OUTER_RADIUS;
@@ -104,18 +158,23 @@ export function RadialPickerPortal({
 
   return (
     <div
+      ref={overlayRef}
+      data-testid="radial-picker-overlay"
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 1000,
         pointerEvents: "auto",
       }}
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onPointerLeave={() => setPreviewToken(null)}
     >
       <div
         ref={containerRef}
+        data-testid="radial-picker-container"
         style={{
           position: "fixed",
           left,
