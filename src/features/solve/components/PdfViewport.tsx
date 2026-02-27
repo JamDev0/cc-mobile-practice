@@ -21,7 +21,9 @@ interface PdfViewportProps {
     xPct: number,
     yPct: number,
     clientX: number,
-    clientY: number
+    clientY: number,
+    pointerId: number,
+    pointerType: string
   ) => void;
   renderMarkerOverlay: (
     pageNumber: number,
@@ -47,6 +49,8 @@ const RENDER_WINDOW_FALLBACK = 2;
 
 /** Per spec 09 §4.3: bounded retries when page node not yet mounted. */
 const SCROLL_RETRY_MAX = 60;
+const LONG_PRESS_MS = 150;
+const LONG_PRESS_MOVE_THRESHOLD_PX = 10;
 
 export function PdfViewport({
   pdfBlob,
@@ -64,6 +68,16 @@ export function PdfViewport({
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRectRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const longPressRef = useRef<{
+    pointerId: number;
+    pageNumber: number;
+    startClientX: number;
+    startClientY: number;
+    latestClientX: number;
+    latestClientY: number;
+    timeoutId: ReturnType<typeof setTimeout> | null;
+    cancelled: boolean;
+  } | null>(null);
   const [pageDimensions, setPageDimensions] = useState<
     Map<number, { width: number; height: number }>
   >(new Map());
@@ -78,6 +92,7 @@ export function PdfViewport({
     const targetPage = scrollToPageNumber;
     let attempts = 0;
     let cancelled = false;
+    let scrolledPageOnce = false;
 
     const tryScroll = () => {
       if (cancelled) return;
@@ -98,9 +113,15 @@ export function PdfViewport({
         `[data-page-number="${targetPage}"]`
       );
       if (pageEl) {
-        pageEl.scrollIntoView({ block: "center", behavior: "smooth" });
-        onScrollAttempted?.(true);
-        return;
+        if (!scrolledPageOnce) {
+          pageEl.scrollIntoView({ block: "center", behavior: "smooth" });
+          scrolledPageOnce = true;
+        }
+        if (scrollToMarkerId == null) {
+          onScrollAttempted?.(true);
+          return;
+        }
+        // Marker target requested: keep retrying until marker element mounts.
       }
       if (attempts >= SCROLL_RETRY_MAX) {
         onScrollAttempted?.(false);
@@ -126,24 +147,90 @@ export function PdfViewport({
     []
   );
 
+  const cancelLongPress = useCallback(() => {
+    const current = longPressRef.current;
+    if (!current) return;
+    if (current.timeoutId) clearTimeout(current.timeoutId);
+    longPressRef.current = null;
+  }, []);
+
   const handlePagePointerDown = useCallback(
     (pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      const target = e.currentTarget;
-      const rect = target.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-      const dims = pageDimensions.get(pageNumber);
-      if (!dims) return;
-      const { xPct, yPct } = tapToPct(
-        clickX,
-        clickY,
-        dims.width,
-        dims.height
-      );
-      onPageTap(pageNumber, xPct, yPct, e.clientX, e.clientY);
+      if (longPressRef.current) return;
+
+      const targetEl = e.currentTarget;
+      const dims =
+        pageDimensions.get(pageNumber) ?? {
+          width: targetEl.getBoundingClientRect().width,
+          height: targetEl.getBoundingClientRect().height,
+        };
+      const pointerType = e.pointerType;
+      if (typeof e.currentTarget.setPointerCapture === "function") {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+
+      const timeoutId = setTimeout(() => {
+        const state = longPressRef.current;
+        if (!state || state.cancelled) return;
+        const rect = targetEl.getBoundingClientRect();
+        const clickX = state.latestClientX - rect.left;
+        const clickY = state.latestClientY - rect.top;
+        const { xPct, yPct } = tapToPct(clickX, clickY, dims.width, dims.height);
+        onPageTap(
+          pageNumber,
+          xPct,
+          yPct,
+          state.latestClientX,
+          state.latestClientY,
+          state.pointerId,
+          pointerType
+        );
+        // Do not clear the ref here; we still want to ignore post-trigger move-cancel logic.
+      }, LONG_PRESS_MS);
+
+      longPressRef.current = {
+        pointerId: e.pointerId,
+        pageNumber,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        latestClientX: e.clientX,
+        latestClientY: e.clientY,
+        timeoutId,
+        cancelled: false,
+      };
     },
     [pageDimensions, onPageTap]
+  );
+
+  const handlePagePointerMove = useCallback(
+    (pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      const state = longPressRef.current;
+      if (!state) return;
+      if (state.pageNumber !== pageNumber) return;
+      if (state.pointerId !== e.pointerId) return;
+      state.latestClientX = e.clientX;
+      state.latestClientY = e.clientY;
+      const dx = e.clientX - state.startClientX;
+      const dy = e.clientY - state.startClientY;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_THRESHOLD_PX) {
+        state.cancelled = true;
+        cancelLongPress();
+      }
+    },
+    [cancelLongPress]
+  );
+
+  const handlePagePointerUpOrCancel = useCallback(
+    (_pageNumber: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      const state = longPressRef.current;
+      if (!state || state.pointerId !== e.pointerId) return;
+      if (typeof e.currentTarget.releasePointerCapture === "function") {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+      cancelLongPress();
+    },
+    [cancelLongPress]
   );
 
   if (!pdfBlob) {
@@ -238,9 +325,13 @@ export function PdfViewport({
             <div
               data-testid={`pdf-page-hitbox-${pageNum}`}
               onPointerDown={handlePagePointerDown(pageNum)}
+              onPointerMove={handlePagePointerMove(pageNum)}
+              onPointerUp={handlePagePointerUpOrCancel(pageNum)}
+              onPointerCancel={handlePagePointerUpOrCancel(pageNum)}
               style={{
                 cursor: "pointer",
                 position: "relative",
+                touchAction: "pan-y",
               }}
             >
               <Page

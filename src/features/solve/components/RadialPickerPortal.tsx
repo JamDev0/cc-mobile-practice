@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ANSWER_TOKENS } from "@/domain/models/constants";
 import type { AnswerToken } from "@/domain/models/types";
 
@@ -8,6 +8,12 @@ interface RadialPickerPortalProps {
   anchorX: number;
   anchorY: number;
   questionNumber: number;
+  initialPointer?: {
+    pointerId: number;
+    pointerType: string;
+    clientX: number;
+    clientY: number;
+  };
   onSelect: (token: AnswerToken) => void;
   onCancel: () => void;
 }
@@ -38,6 +44,7 @@ export function RadialPickerPortal({
   anchorX,
   anchorY,
   questionNumber,
+  initialPointer,
   onSelect,
   onCancel,
 }: RadialPickerPortalProps) {
@@ -54,14 +61,14 @@ export function RadialPickerPortal({
     return TOKENS[index];
   }, []);
 
-  const getPositionFromEvent = useCallback(
-    (e: React.PointerEvent): { dist: number; angle: number } | null => {
+  const getPositionFromClient = useCallback(
+    (clientX: number, clientY: number): { dist: number; angle: number } | null => {
       if (!containerRef.current) return null;
       const rect = containerRef.current.getBoundingClientRect();
       const cx = rect.width / 2;
       const cy = rect.height / 2;
-      const dx = e.clientX - rect.left - cx;
-      const dy = e.clientY - rect.top - cy;
+      const dx = clientX - rect.left - cx;
+      const dy = clientY - rect.top - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx);
       return { dist, angle };
@@ -69,29 +76,48 @@ export function RadialPickerPortal({
     []
   );
 
+  useEffect(() => {
+    if (!initialPointer) return;
+    if (!overlayRef.current) return;
+    if (activePointerRef.current != null) return;
+    activePointerRef.current = initialPointer.pointerId;
+    settledRef.current = false;
+    if (typeof overlayRef.current.setPointerCapture === "function") {
+      overlayRef.current.setPointerCapture(initialPointer.pointerId);
+    }
+    const pos = getPositionFromClient(initialPointer.clientX, initialPointer.clientY);
+    if (pos && pos.dist >= INNER_RADIUS) {
+      setPreviewToken(getTokenAtAngle(pos.angle));
+    } else {
+      setPreviewToken(null);
+    }
+  }, [initialPointer, getPositionFromClient, getTokenAtAngle]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
+      e.preventDefault();
       if (activePointerRef.current != null) return;
       activePointerRef.current = e.pointerId;
       settledRef.current = false;
       if (typeof overlayRef.current?.setPointerCapture === "function") {
         overlayRef.current.setPointerCapture(e.pointerId);
       }
-      const pos = getPositionFromEvent(e);
+      const pos = getPositionFromClient(e.clientX, e.clientY);
       if (pos && pos.dist >= INNER_RADIUS) {
         setPreviewToken(getTokenAtAngle(pos.angle));
       } else {
         setPreviewToken(null);
       }
     },
-    [getPositionFromEvent, getTokenAtAngle]
+    [getPositionFromClient, getTokenAtAngle]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      e.preventDefault();
       if (activePointerRef.current !== e.pointerId) return;
       if (!containerRef.current) return;
-      const pos = getPositionFromEvent(e);
+      const pos = getPositionFromClient(e.clientX, e.clientY);
       if (!pos) return;
       if (pos.dist < INNER_RADIUS) {
         setPreviewToken(null);
@@ -99,17 +125,18 @@ export function RadialPickerPortal({
         setPreviewToken(getTokenAtAngle(pos.angle));
       }
     },
-    [getPositionFromEvent, getTokenAtAngle]
+    [getPositionFromClient, getTokenAtAngle]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
+      e.preventDefault();
       if (activePointerRef.current !== e.pointerId) return;
       activePointerRef.current = null;
       if (typeof overlayRef.current?.releasePointerCapture === "function") {
         overlayRef.current.releasePointerCapture(e.pointerId);
       }
-      const pos = getPositionFromEvent(e);
+      const pos = getPositionFromClient(e.clientX, e.clientY);
       if (!pos) return;
       if (pos.dist < INNER_RADIUS) {
         settleOnce(settledRef, onCancel);
@@ -118,11 +145,12 @@ export function RadialPickerPortal({
         settleOnce(settledRef, () => onSelect(token));
       }
     },
-    [getPositionFromEvent, getTokenAtAngle, onCancel, onSelect]
+    [getPositionFromClient, getTokenAtAngle, onCancel, onSelect]
   );
 
   const handlePointerCancel = useCallback(
     (e: React.PointerEvent) => {
+      e.preventDefault();
       if (activePointerRef.current !== e.pointerId) return;
       activePointerRef.current = null;
       if (typeof overlayRef.current?.releasePointerCapture === "function") {
@@ -170,6 +198,7 @@ export function RadialPickerPortal({
         inset: 0,
         zIndex: RADIAL_OVERLAY_Z_INDEX,
         pointerEvents: "auto",
+        touchAction: "none",
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}

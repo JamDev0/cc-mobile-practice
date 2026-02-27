@@ -15,6 +15,13 @@ import type { JumpRequest } from "../types";
 
 const HIGHLIGHT_PULSE_MS = 1000;
 
+type PendingPointer = {
+  pointerId: number;
+  pointerType: string;
+  clientX: number;
+  clientY: number;
+};
+
 interface SolveScreenProps {
   sessionId: string;
   jumpRequest?: JumpRequest | null;
@@ -69,6 +76,11 @@ export function SolveScreen({
   const [scrollToMarkerId, setScrollToMarkerId] = useState<string | null>(null);
   const [jumpError, setJumpError] = useState<string | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingPointer, setPendingPointer] = useState<PendingPointer | null>(null);
+
+  useEffect(() => {
+    if (!pendingMarker) setPendingPointer(null);
+  }, [pendingMarker]);
 
   useEffect(() => {
     if (session && !sessionNotFound) {
@@ -140,8 +152,11 @@ export function SolveScreen({
       xPct: number,
       yPct: number,
       clientX: number,
-      clientY: number
+      clientY: number,
+      pointerId: number,
+      pointerType: string
     ) => {
+      setPendingPointer({ pointerId, pointerType, clientX, clientY });
       createPendingMarker(pageNumber, xPct, yPct, clientX, clientY);
     },
     [createPendingMarker]
@@ -367,6 +382,7 @@ export function SolveScreen({
           anchorX={pendingAnchor.x}
           anchorY={pendingAnchor.y}
           questionNumber={pendingMarker.suggestedQuestionNumber}
+          initialPointer={pendingPointer ?? undefined}
           onSelect={handleRadialSelect}
           onCancel={cancelPendingMarker}
         />

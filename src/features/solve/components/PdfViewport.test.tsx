@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { PdfViewport } from "./PdfViewport";
 
 vi.mock("react-pdf", () => {
@@ -39,10 +39,13 @@ vi.mock("react-pdf", () => {
 
 describe("PdfViewport interactions", () => {
   beforeEach(() => {
+    cleanup();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
-  it("activates marker creation on pointer press", async () => {
+  it("activates marker creation only after long press", async () => {
+    vi.useFakeTimers();
     const onPageTap = vi.fn();
     render(
       <PdfViewport
@@ -59,21 +62,62 @@ describe("PdfViewport interactions", () => {
       />
     );
 
-    const page = await screen.findByText("Page 1");
+    const page = screen.getByText("Page 1");
     const pageContainer = page.parentElement as HTMLElement;
     fireEvent.pointerDown(pageContainer, {
       pointerType: "mouse",
       button: 0,
       clientX: 200,
       clientY: 300,
+      pointerId: 7,
     });
 
-    await waitFor(() => {
-      expect(onPageTap).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(140);
+    expect(onPageTap).toHaveBeenCalledTimes(0);
+    await vi.advanceTimersByTimeAsync(20);
+    expect(onPageTap).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create marker when moved during long press window", async () => {
+    vi.useFakeTimers();
+    const onPageTap = vi.fn();
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={1}
+        onPageCountKnown={() => {}}
+        onPageTap={onPageTap}
+        renderMarkerOverlay={() => null}
+        pendingMarker={null}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+      />
+    );
+
+    const page = screen.getByText("Page 1");
+    const pageContainer = page.parentElement as HTMLElement;
+    fireEvent.pointerDown(pageContainer, {
+      pointerType: "mouse",
+      button: 0,
+      clientX: 200,
+      clientY: 300,
+      pointerId: 7,
     });
+    fireEvent.pointerMove(pageContainer, {
+      pointerType: "mouse",
+      clientX: 240,
+      clientY: 340,
+      pointerId: 7,
+    });
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(onPageTap).toHaveBeenCalledTimes(0);
   });
 
   it("jump prefers marker target when marker is mounted", async () => {
+    vi.useRealTimers();
     const onScrollAttempted = vi.fn();
     const markerScroll = vi.fn();
     render(

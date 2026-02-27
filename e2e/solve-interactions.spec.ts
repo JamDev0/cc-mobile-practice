@@ -38,23 +38,21 @@ async function createSessionWithPdf(page: import("@playwright/test").Page, pageC
   await expect(page.getByTestId("pdf-page-hitbox-1")).toBeVisible({ timeout: 10000 });
 }
 
-async function openRadialByPress(page: import("@playwright/test").Page, pageNumber: number) {
+async function openRadialByLongPress(page: import("@playwright/test").Page, pageNumber: number) {
   const hitbox = page.getByTestId(`pdf-page-hitbox-${pageNumber}`);
   await expect(hitbox).toBeVisible();
+  await hitbox.scrollIntoViewIfNeeded();
   const box = await hitbox.boundingBox();
   if (!box) throw new Error("Missing PDF page hitbox bounds");
   const clientX = box.x + box.width * 0.6;
-  const clientY = box.y + box.height * 0.35;
-  await hitbox.dispatchEvent("pointerdown", {
-    pointerType: "mouse",
-    button: 0,
-    clientX,
-    clientY,
-  });
+  const clientY = box.y + box.height * 0.55;
+  await page.mouse.move(clientX, clientY);
+  await page.mouse.down();
+  await page.waitForTimeout(320);
   await expect(page.getByTestId("radial-picker-overlay")).toBeVisible();
 }
 
-async function commitTokenA(page: import("@playwright/test").Page) {
+async function slideToTokenAndRelease(page: import("@playwright/test").Page, token: "A" | "B") {
   const container = page.getByTestId("radial-picker-container");
   await expect(container).toBeVisible();
   const box = await container.boundingBox();
@@ -62,29 +60,17 @@ async function commitTokenA(page: import("@playwright/test").Page) {
   const centerX = box.x + box.width / 2;
   const centerY = box.y + box.height / 2;
   const r = box.width * 0.35;
-  const angle = (-5 * Math.PI) / 6;
+  const angle = token === "A" ? (-5 * Math.PI) / 6 : -Math.PI / 2;
   const x = centerX + r * Math.cos(angle);
   const y = centerY + r * Math.sin(angle);
-  await page.getByTestId("radial-picker-overlay").dispatchEvent("pointerdown", {
-    pointerType: "mouse",
-    button: 0,
-    pointerId: 1,
-    clientX: x,
-    clientY: y,
-  });
-  await page.getByTestId("radial-picker-overlay").dispatchEvent("pointerup", {
-    pointerType: "mouse",
-    button: 0,
-    pointerId: 1,
-    clientX: x,
-    clientY: y,
-  });
+  await page.mouse.move(x, y);
+  await page.mouse.up();
 }
 
 test("press on PDF opens radial and marker can be edited by click", async ({ page }) => {
   await createSessionWithPdf(page, 2);
-  await openRadialByPress(page, 1);
-  await commitTokenA(page);
+  await openRadialByLongPress(page, 1);
+  await slideToTokenAndRelease(page, "A");
   const marker = page.getByRole("button", { name: /Marker question 1, answer A/i }).first();
   await expect(marker).toBeVisible();
   await marker.click();
@@ -99,9 +85,13 @@ test("review jump from answer on late page scrolls solve viewport to target", as
     node.scrollTop = node.scrollHeight;
   });
   await expect(page.getByTestId("pdf-page-hitbox-6")).toBeVisible();
+  await expect(page.getByText("Mobile Practice E2E Page 6/6")).toBeVisible({ timeout: 10000 });
 
-  await openRadialByPress(page, 6);
-  await commitTokenA(page);
+  await openRadialByLongPress(page, 6);
+  const scrollBefore = await viewport.evaluate((node) => node.scrollTop);
+  await slideToTokenAndRelease(page, "A");
+  const scrollAfter = await viewport.evaluate((node) => node.scrollTop);
+  expect(Math.abs(scrollAfter - scrollBefore)).toBeLessThan(2);
   await expect(page.getByRole("button", { name: /Marker question 1, answer A/i }).first()).toBeVisible();
 
   await page.getByRole("tab", { name: "Review" }).click();
@@ -113,13 +103,13 @@ test("review jump from answer on late page scrolls solve viewport to target", as
     .poll(async () => {
       return page.evaluate(() => {
         const container = document.querySelector('[data-testid="pdf-viewport-scroll"]');
-        const target = document.querySelector('[data-page-number="6"]');
-        if (!(container instanceof HTMLElement) || !(target instanceof HTMLElement)) return false;
+        const marker = document.querySelector('[data-marker-id]');
+        if (!(container instanceof HTMLElement) || !(marker instanceof HTMLElement)) return false;
         const c = container.getBoundingClientRect();
-        const p = target.getBoundingClientRect();
+        const m = marker.getBoundingClientRect();
         const viewportCenter = c.top + c.height / 2;
-        const pageCenter = p.top + p.height / 2;
-        return Math.abs(pageCenter - viewportCenter) < c.height * 0.45;
+        const markerCenter = m.top + m.height / 2;
+        return Math.abs(markerCenter - viewportCenter) < c.height * 0.45;
       });
     })
     .toBe(true);
