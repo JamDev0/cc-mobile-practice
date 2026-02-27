@@ -109,4 +109,38 @@ describe("SessionTabPanel - Data Loss Warning (Spec 00 §9)", () => {
       expect(screen.getByText(/session not found/i)).toBeInTheDocument();
     });
   });
+
+  it("SSN: Switch session link visible when session exists", async () => {
+    const sessionId = "session-tab-test";
+    const session = mkSession({ id: sessionId });
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const { container } = render(<SessionTabPanel sessionId={sessionId} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    const link = wrapper.getByTestId("switch-session-link-session-tab");
+    expect(link).toHaveAttribute("href", "/sessions");
+    expect(link).toHaveAccessibleName("Switch session");
+  });
+
+  it("SSN: Switch session link visible when session not found", async () => {
+    const { container } = render(
+      <SessionTabPanel sessionId="nonexistent-session" />
+    );
+
+    const wrapper = within(container);
+    await waitFor(() => {
+      expect(wrapper.getByText(/session not found/i)).toBeInTheDocument();
+      expect(wrapper.getByTestId("switch-session-link-session-tab")).toBeInTheDocument();
+    });
+
+    const link = wrapper.getByTestId("switch-session-link-session-tab");
+    expect(link).toHaveAttribute("href", "/sessions");
+  });
 });

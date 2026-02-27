@@ -5,7 +5,7 @@
 
 import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, within, waitFor } from "@testing-library/react";
+import { render, screen, within, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { deleteDB } from "idb";
 import { openDatabase } from "@/storage/indexeddb/db";
@@ -171,6 +171,147 @@ describe("ReviewScreen - IRG-09, IRG-10", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("dialog", { name: /edit gabarito/i })).toBeInTheDocument();
+    });
+  });
+});
+
+describe("ReviewScreen - RDA (Delete user answer)", () => {
+  beforeEach(async () => {
+    cleanup();
+    await deleteDB(DB_NAME);
+  });
+
+  it("RDA-01: Delete single-marker row - user answer removed, row updates", async () => {
+    const sessionId = "review-screen-test";
+    const session = mkSession({ id: sessionId });
+    const marker = mkMarker({ id: "marker-to-delete", questionNumber: 1, answerToken: "A" });
+    const gabarito = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putMarker(db, marker);
+    await putGabaritoEntry(db, gabarito);
+    db.close();
+
+    const onRequestJump = vi.fn();
+    const { container } = render(
+      <ReviewScreen sessionId={sessionId} onRequestJump={onRequestJump} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const { getByTestId } = within(container);
+    const deleteBtn = getByTestId("delete-Q1");
+    await userEvent.click(deleteBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /delete user answer confirmation/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Delete this user answer\?/)).toBeInTheDocument();
+
+    const deleteConfirmBtn = screen.getByRole("button", { name: /^Delete$/ });
+    await userEvent.click(deleteConfirmBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    expect(wrapper.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+    expect(wrapper.queryByTestId("delete-Q1")).not.toBeInTheDocument();
+  });
+
+  it("RDA-02: Delete from conflict row - selected marker removed, status recomputed", async () => {
+    const sessionId = "review-screen-test";
+    const session = mkSession({ id: sessionId });
+    const m1 = mkMarker({ id: "m1", questionNumber: 1, answerToken: "A", pageNumber: 1 });
+    const m2 = mkMarker({ id: "m2", questionNumber: 1, answerToken: "B", pageNumber: 2 });
+    const gabarito = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putMarker(db, m1);
+    await putMarker(db, m2);
+    await putGabaritoEntry(db, gabarito);
+    db.close();
+
+    const onRequestJump = vi.fn();
+    const { container } = render(
+      <ReviewScreen sessionId={sessionId} onRequestJump={onRequestJump} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const { getByTestId } = within(container);
+    const deleteBtn = getByTestId("delete-Q1");
+    await userEvent.click(deleteBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /choose marker to delete/i })).toBeInTheDocument();
+    });
+
+    const markerPage2Button = screen.getByRole("button", { name: /Marker on page 2/ });
+    await userEvent.click(markerPage2Button);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /delete user answer confirmation/i })).toBeInTheDocument();
+    });
+
+    const deleteConfirmBtn = screen.getByRole("button", { name: /^Delete$/ });
+    await userEvent.click(deleteConfirmBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    expect(wrapper.getAllByText("A").length).toBeGreaterThanOrEqual(1);
+    expect(wrapper.queryByText("B")).not.toBeInTheDocument();
+  });
+
+  it("RDA-03: Delete causes missing-user row - mismatch counts update", async () => {
+    const sessionId = "review-screen-test";
+    const session = mkSession({ id: sessionId });
+    const m1 = mkMarker({ id: "m1", questionNumber: 1, answerToken: "A" });
+    const m2 = mkMarker({ id: "m2", questionNumber: 2, answerToken: "B" });
+    const gabarito1 = mkGabarito({ id: "g1", questionNumber: 1, answerToken: "A" });
+    const gabarito2 = mkGabarito({ id: "g2", questionNumber: 2, answerToken: "B" });
+
+    const db = await openDatabase();
+    await putSession(db, session);
+    await putMarker(db, m1);
+    await putMarker(db, m2);
+    await putGabaritoEntry(db, gabarito1);
+    await putGabaritoEntry(db, gabarito2);
+    db.close();
+
+    const onRequestJump = vi.fn();
+    const { container } = render(
+      <ReviewScreen sessionId={sessionId} onRequestJump={onRequestJump} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const { getByTestId } = within(container);
+    expect(getByTestId("delete-Q1")).toBeInTheDocument();
+    const deleteBtn = getByTestId("delete-Q1");
+    await userEvent.click(deleteBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /delete user answer confirmation/i })).toBeInTheDocument();
+    });
+
+    const deleteConfirmBtn = screen.getByRole("button", { name: /^Delete$/ });
+    await userEvent.click(deleteConfirmBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Missing user answers: 1/)).toBeInTheDocument();
     });
   });
 });

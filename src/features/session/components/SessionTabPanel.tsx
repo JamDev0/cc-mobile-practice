@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { getSession } from "@/storage/indexeddb/sessionAdapter";
@@ -49,8 +50,31 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
 
   if (error) {
     return (
-      <div style={{ padding: "1rem" }}>
+      <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <p style={{ color: "#c5221f" }}>{error}</p>
+        <Link
+          href="/sessions"
+          data-testid="switch-session-link-session-tab"
+          style={{
+            minWidth: 44,
+            minHeight: 44,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            alignSelf: "flex-start",
+            padding: "0.5rem 0.75rem",
+            borderRadius: 6,
+            border: "1px solid #2563eb",
+            background: "white",
+            color: "#2563eb",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            textDecoration: "none",
+          }}
+          aria-label="Switch session"
+        >
+          Switch session
+        </Link>
       </div>
     );
   }
@@ -72,6 +96,29 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
         gap: "1.25rem",
       }}
     >
+      <Link
+        href="/sessions"
+        data-testid="switch-session-link-session-tab"
+        style={{
+          minWidth: 44,
+          minHeight: 44,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          alignSelf: "flex-start",
+          padding: "0.5rem 0.75rem",
+          borderRadius: 6,
+          border: "1px solid #2563eb",
+          background: "white",
+          color: "#2563eb",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          textDecoration: "none",
+        }}
+        aria-label="Switch session"
+      >
+        Switch session
+      </Link>
       <section>
         <h2
           style={{

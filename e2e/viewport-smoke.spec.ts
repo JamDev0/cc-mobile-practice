@@ -66,4 +66,37 @@ test.describe("Session page (tabbed layout)", () => {
       page.getByText(/Session not found|Your data is stored only in this browser/i)
     ).toBeVisible();
   });
+
+  test("SSN-01: Switch session affordance visible", async ({ page }) => {
+    await page.goto("/sessions/test-session-id");
+    await expect(
+      page.getByRole("link", { name: "Switch session" })
+    ).toBeVisible();
+  });
+
+  test("SSN-02: Activate switch action navigates to /sessions", async ({
+    page,
+  }) => {
+    await page.goto("/sessions/test-session-id");
+    await page.getByRole("link", { name: "Switch session" }).click();
+    await expect(page).toHaveURL(/\/sessions$/);
+  });
+
+  test("SSN-03: Keyboard activation navigates to /sessions", async ({
+    page,
+  }) => {
+    await page.goto("/sessions/test-session-id");
+    await page.getByRole("link", { name: "Switch session" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/sessions$/);
+  });
+
+  test("SSN-04: Session-not-found route has switch affordance", async ({
+    page,
+  }) => {
+    await page.goto("/sessions/nonexistent-session-id");
+    await expect(
+      page.getByRole("link", { name: "Switch session" })
+    ).toBeVisible();
+  });
 });

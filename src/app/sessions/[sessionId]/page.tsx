@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { TabBar } from "@/shared/ui/TabBar";
@@ -93,9 +94,35 @@ export default function SessionPage() {
         style={{
           padding: "0.75rem 1rem",
           borderBottom: "1px solid #eee",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.5rem",
         }}
       >
-        <h1>Session: {sessionId}</h1>
+        <h1 style={{ margin: 0, fontSize: "1.25rem" }}>Session: {sessionId}</h1>
+        <Link
+          href="/sessions"
+          data-testid="switch-session-link-header"
+          style={{
+            minWidth: 44,
+            minHeight: 44,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0.5rem 0.75rem",
+            borderRadius: 6,
+            border: "1px solid #2563eb",
+            background: "white",
+            color: "#2563eb",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            textDecoration: "none",
+          }}
+          aria-label="Switch session"
+        >
+          Switch session
+        </Link>
       </header>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: activeTab === "solve" ? 0 : "1rem" }}>
         <TabContent
