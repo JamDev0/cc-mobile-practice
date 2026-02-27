@@ -419,12 +419,14 @@ export function PdfViewport({
       data-testid="pdf-viewport-scroll"
       style={{
         flex: 1,
+        minHeight: 0,
+        width: "100%",
         overflow: disableScroll ? "hidden" : "auto",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         padding: "1rem",
-        touchAction: disableScroll ? "none" : "manipulation",
+        touchAction: disableScroll ? "none" : "auto",
         overscrollBehavior: "none",
       }}
       onTouchStart={handleContainerTouchStart}
@@ -503,7 +505,7 @@ export function PdfViewport({
               style={{
                 cursor: "pointer",
                 position: "relative",
-                touchAction: pendingMarker ? "none" : "pan-y",
+                touchAction: disableScroll ? "none" : "auto",
                 userSelect: "none",
                 WebkitUserSelect: "none",
               }}

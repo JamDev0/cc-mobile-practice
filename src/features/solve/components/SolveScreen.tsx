@@ -70,43 +70,10 @@ export function SolveScreen({
   const [jumpError, setJumpError] = useState<string | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingPointer, setPendingPointer] = useState<PendingPointer | null>(null);
-  const scrollLockRef = useRef<{
-    overflow: string;
-    touchAction: string;
-    overscrollBehavior: string;
-  } | null>(null);
 
   useEffect(() => {
     if (!pendingMarker) setPendingPointer(null);
   }, [pendingMarker]);
-
-  const lockScrollNow = useCallback(() => {
-    const body = document.body;
-    if (scrollLockRef.current) return;
-    scrollLockRef.current = {
-      overflow: body.style.overflow,
-      touchAction: body.style.touchAction,
-      overscrollBehavior: body.style.overscrollBehavior,
-    };
-    body.style.overflow = "hidden";
-    body.style.touchAction = "none";
-    body.style.overscrollBehavior = "none";
-  }, []);
-
-  const unlockScrollNow = useCallback(() => {
-    const body = document.body;
-    const prev = scrollLockRef.current;
-    if (!prev) return;
-    body.style.overflow = prev.overflow;
-    body.style.touchAction = prev.touchAction;
-    body.style.overscrollBehavior = prev.overscrollBehavior;
-    scrollLockRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (pendingMarker) return;
-    unlockScrollNow();
-  }, [pendingMarker, unlockScrollNow]);
 
   useEffect(() => {
     if (session && !sessionNotFound) {
@@ -182,12 +149,10 @@ export function SolveScreen({
       pointerId: number,
       pointerType: string
     ) => {
-      // Lock immediately so the first slide after long-press cannot start a scroll.
-      lockScrollNow();
       setPendingPointer({ pointerId, pointerType, clientX, clientY });
       createPendingMarker(pageNumber, xPct, yPct, clientX, clientY);
     },
-    [createPendingMarker, lockScrollNow]
+    [createPendingMarker]
   );
 
   const handlePageCountKnown = useCallback(
