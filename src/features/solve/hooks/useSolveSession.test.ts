@@ -206,6 +206,28 @@ describe("useSolveSession - Solve acceptance", () => {
     });
   });
 
+  it("reopen: reliable session+blob load when blob present (no reload/refetch)", async () => {
+    const sessionId = "reopen-test-session";
+    await seedSession(sessionId);
+
+    const { result, unmount } = renderHook(() => useSolveSession(sessionId));
+
+    await waitFor(() => {
+      expect(result.current.session).not.toBeNull();
+      expect(result.current.pdfBlob).toBeTruthy();
+    });
+
+    unmount();
+
+    const { result: result2 } = renderHook(() => useSolveSession(sessionId));
+    await waitFor(() => {
+      expect(result2.current.session).not.toBeNull();
+      expect(result2.current.pdfBlob).toBeTruthy();
+    });
+    expect(result2.current.session?.id).toBe(sessionId);
+    expect(result2.current.sessionNotFound).toBe(false);
+  });
+
   it("S-UI-05: Delete marker - row and grading recompute immediately", async () => {
     const sessionId = "solve-test-session-3";
     await seedSession(sessionId);

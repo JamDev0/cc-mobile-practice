@@ -75,30 +75,38 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
 
   const clearWriteError = useCallback(() => setWriteError(null), []);
 
-  const loadData = useCallback(async () => {
-    if (!sessionId) return;
-    setSessionNotFound(false);
-    setError(null);
-    setWriteError(null);
-    try {
-      const db = await openDatabase();
-      const s = await getSession(db, sessionId);
-      const blob = await getPdfBlob(db, sessionId);
-      const m = await listMarkersBySession(db, sessionId);
-      db.close();
-      setSession(s ?? null);
-      setPdfBlob(blob ?? null);
-      setMarkers(deriveMarkerStatuses(m));
-      setPageCountState(s?.pageCount ?? null);
-      setSessionNotFound(s == null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+  const loadData = useCallback(
+    async (signal: AbortSignal) => {
+      if (!sessionId) return;
       setSessionNotFound(false);
-    }
-  }, [sessionId]);
+      setError(null);
+      setWriteError(null);
+      try {
+        const db = await openDatabase();
+        if (signal.aborted) return;
+        const s = await getSession(db, sessionId);
+        const blob = await getPdfBlob(db, sessionId);
+        const m = await listMarkersBySession(db, sessionId);
+        db.close();
+        if (signal.aborted) return;
+        setSession(s ?? null);
+        setPdfBlob(blob ?? null);
+        setMarkers(deriveMarkerStatuses(m));
+        setPageCountState(s?.pageCount ?? null);
+        setSessionNotFound(s == null);
+      } catch (err) {
+        if (signal.aborted) return;
+        setError(err instanceof Error ? err.message : "Failed to load");
+        setSessionNotFound(false);
+      }
+    },
+    [sessionId]
+  );
 
   useEffect(() => {
-    loadData();
+    const ac = new AbortController();
+    loadData(ac.signal);
+    return () => ac.abort();
   }, [loadData]);
 
   const setPageCount = useCallback(async (n: number) => {
