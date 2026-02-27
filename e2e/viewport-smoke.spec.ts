@@ -9,7 +9,7 @@ test.describe("Home page", () => {
   test("renders title and sessions link", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Mobile Practice" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Go to Sessions" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Sessions" })).toBeVisible();
   });
 });
 
