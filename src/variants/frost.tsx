@@ -373,7 +373,8 @@ export function FrostSessionShell({
   return (
     <div
       style={{
-        minHeight: "100dvh",
+        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--font-family)",
@@ -480,8 +481,11 @@ export function FrostSessionShell({
         <div
           style={{
             flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
             padding: activeTab === "solve" ? 0 : "1rem 1.25rem",
-            overflow: "auto",
+            overflow: activeTab === "solve" ? undefined : "auto",
           }}
         >
           {children}

@@ -315,7 +315,8 @@ export function NoirSessionShell({
   return (
     <div
       style={{
-        minHeight: "100dvh",
+        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--font-family-mono)",
@@ -360,9 +361,11 @@ export function NoirSessionShell({
       <div
         style={{
           flex: 1,
-          padding: "1.25rem",
-          overflow: "auto",
-          paddingBottom: 64,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: activeTab === "solve" ? "0 0 64px" : "1.25rem 1.25rem 64px",
+          overflow: activeTab === "solve" ? undefined : "auto",
         }}
       >
         {children}

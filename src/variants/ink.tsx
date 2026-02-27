@@ -325,7 +325,8 @@ export function InkSessionShell({
   return (
     <div
       style={{
-        minHeight: "100dvh",
+        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--font-family-mono)",
@@ -397,10 +398,14 @@ export function InkSessionShell({
       <div
         style={{
           flex: 1,
-          padding: "1rem 1.5rem",
-          overflow: "auto",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: activeTab === "solve" ? 0 : "1rem 1.5rem",
+          overflow: activeTab === "solve" ? undefined : "auto",
         }}
       >
+        {activeTab !== "solve" && (
         <p
           style={{
             fontSize: "0.75rem",
@@ -410,6 +415,7 @@ export function InkSessionShell({
         >
           &gt; {hashPrefix}...
         </p>
+        )}
         {children}
       </div>
     </div>

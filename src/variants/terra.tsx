@@ -334,7 +334,8 @@ export function TerraSessionShell({
   return (
     <div
       style={{
-        minHeight: "100dvh",
+        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--font-family)",
@@ -380,8 +381,11 @@ export function TerraSessionShell({
       <div
         style={{
           flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
           padding: activeTab === "solve" ? "0 0 80px" : "1.25rem 1.25rem 80px",
-          overflow: "auto",
+          overflow: activeTab === "solve" ? undefined : "auto",
         }}
       >
         {children}
