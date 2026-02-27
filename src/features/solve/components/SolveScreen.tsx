@@ -6,11 +6,9 @@ import { PdfViewport } from "./PdfViewport";
 import { MarkerOverlayLayer } from "./MarkerOverlayLayer";
 import { RadialPickerPortal } from "./RadialPickerPortal";
 import { EditMarkerSheet } from "./EditMarkerSheet";
-import { SolveHeader } from "./SolveHeader";
 import { useSolveSession } from "../hooks/useSolveSession";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import type { AnswerToken } from "@/domain/models/types";
-import type { PendingMarker } from "../types";
 import type { JumpRequest } from "../types";
 
 const HIGHLIGHT_PULSE_MS = 1000;
@@ -64,11 +62,6 @@ export function SolveScreen({
 
   const [reattachError, setReattachError] = useState<string | null>(null);
   const reattachInputRef = useRef<HTMLInputElement>(null);
-
-  const hasConflict = useMemo(
-    () => markers.some((m) => m.status === "conflict"),
-    [markers]
-  );
 
   const [scrollToPageNumber, setScrollToPageNumber] = useState<number | null>(
     null
@@ -373,12 +366,6 @@ export function SolveScreen({
           {jumpError}
         </div>
       )}
-      <SolveHeader
-        sessionTitle={session.title}
-        currentPage={activePage}
-        pageCount={pageCount}
-        hasConflict={hasConflict}
-      />
       <PdfViewport
         pdfBlob={pdfBlob}
         pageCount={pageCount}
