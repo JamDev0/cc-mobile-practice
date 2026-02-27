@@ -1,19 +1,27 @@
 ## Build & Run
 
+- `npm run setup:cloud` — one-time cloud bootstrap (Node guard, npm install, Playwright deps/browser)
 - `npm install`
 - `npm run dev` — start dev server
 - `npm run build` — production build (if _document error: `rm -rf .next && npm run build`)
 
 ## Validation
 
-- `npm run typecheck` — TypeScript strict check (run after `npm run build` if .next/types missing)
+- `npm run typecheck` — TypeScript strict check (`next typegen` + `tsc --noEmit`)
 - `npm run test` — Vitest unit tests
 - `npm run test:e2e` — Playwright viewport smoke tests (mobile + tablet)
 - `npm run build` — full build
+- `npm run verify:cloud` — full lint/typecheck/test/build/e2e validation chain
 
 ## Operational Notes
 
-- Next.js 14.2.35, App Router, `src/` layout per spec 04.
+- Next.js 16.1.6, App Router, `src/` layout per spec 04.
+
+## Cursor Cloud specific instructions
+
+- Cloud environment config lives in `.cursor/environment.json`.
+- The cloud install step runs `npm run setup:cloud` to avoid repeated manual setup.
+- Keep the repository on Node 22 (`.nvmrc`, `package.json#engines`) so lint/typecheck/build/test/e2e behavior stays consistent across local + cloud agents.
 
 ### Codebase Patterns
 

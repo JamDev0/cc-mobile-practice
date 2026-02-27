@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.cursor.com/schemas/environment.schema.json",
+  "name": "nextjs16-react19-cloud",
+  "install": "npm run setup:cloud",
+  "start": "node -v && npm -v && npx playwright --version"
+}
