@@ -670,6 +670,7 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
                   <button
                     type="button"
                     onClick={() => handleUserAnswerTap(row)}
+                    data-testid={`user-answer-Q${row.questionNumber}`}
                     style={{
                       background: "none",
                       border: "none",

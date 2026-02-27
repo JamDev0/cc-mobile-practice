@@ -176,6 +176,7 @@ export function PdfViewport({
   return (
     <div
       ref={containerRef}
+      data-testid="pdf-viewport-scroll"
       style={{
         flex: 1,
         overflow: "auto",
@@ -235,6 +236,7 @@ export function PdfViewport({
             }}
           >
             <div
+              data-testid={`pdf-page-hitbox-${pageNum}`}
               onPointerDown={handlePagePointerDown(pageNum)}
               style={{
                 cursor: "pointer",
@@ -263,6 +265,7 @@ export function PdfViewport({
                 left: 0,
                 right: 0,
                 bottom: 0,
+                zIndex: 5,
                 pointerEvents: "none",
               }}
             >
