@@ -7,6 +7,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { tapToPct } from "@/domain/models/coordinates";
 import type { PendingMarker } from "../types";
 
+// Worker must match react-pdf's bundled pdfjs-dist; postinstall copies from react-pdf's node_modules
 if (typeof window !== "undefined") {
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 }
@@ -36,7 +37,9 @@ interface PdfViewportProps {
   scrollToPageNumber: number | null;
 }
 
-const RENDER_WINDOW = 1;
+/** Per spec 06 §4.3.3: fallback to fully rendered page list for V1 scroll continuity.
+ * Windowing blocked natural scrolling past early pages. */
+const RENDER_WINDOW_FALLBACK = 2;
 
 export function PdfViewport({
   pdfBlob,
@@ -112,11 +115,11 @@ export function PdfViewport({
     );
   }
 
-  const startPage = Math.max(1, activePage - RENDER_WINDOW);
+  const startPage = 1;
   const endPage =
     pageCount != null
-      ? Math.min(pageCount, activePage + RENDER_WINDOW)
-      : activePage + RENDER_WINDOW;
+      ? pageCount
+      : Math.max(activePage + RENDER_WINDOW_FALLBACK, 3);
 
   const pages = [];
   for (let p = startPage; p <= endPage; p++) {
@@ -137,20 +140,23 @@ export function PdfViewport({
       onScroll={() => {
         if (!containerRef.current || pageCount == null) return;
         const el = containerRef.current;
-        const scrollTop = el.scrollTop;
-        const children = Array.from(el.children);
-        for (let i = 0; i < children.length; i++) {
-          const child = children[i];
-          const rect = child.getBoundingClientRect();
-          const containerRect = el.getBoundingClientRect();
-          const midY = rect.top + rect.height / 2 - containerRect.top;
-          if (midY >= 0 && midY <= el.clientHeight / 2) {
-            const pageEl = child.querySelector("[data-page-number]");
-            const num = pageEl?.getAttribute("data-page-number");
-            if (num) onActivePageChange(parseInt(num, 10));
-            break;
+        const containerRect = el.getBoundingClientRect();
+        const viewportCenterY = containerRect.top + containerRect.height / 2;
+        const pageEls = el.querySelectorAll("[data-page-number]");
+        let closestPage = activePage;
+        let minDist = Infinity;
+        for (const pageEl of pageEls) {
+          const num = pageEl.getAttribute("data-page-number");
+          if (!num) continue;
+          const rect = pageEl.getBoundingClientRect();
+          const pageCenterY = rect.top + rect.height / 2;
+          const dist = Math.abs(pageCenterY - viewportCenterY);
+          if (dist < minDist) {
+            minDist = dist;
+            closestPage = parseInt(num, 10);
           }
         }
+        if (closestPage !== activePage) onActivePageChange(closestPage);
       }}
     >
       <Document
