@@ -1,11 +1,12 @@
 /**
  * Session tab tests per specs/00-system-contract-ralph-spec.md §9.
- * Verifies mandatory data loss warning and session metadata display.
+ * Verifies mandatory data loss warning, session metadata display, and delete session.
  */
 
 import React from "react";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, within, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { deleteDB } from "idb";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { putSession } from "@/storage/indexeddb/sessionAdapter";
@@ -14,6 +15,11 @@ import { SessionTabPanel } from "./SessionTabPanel";
 import type { Session } from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
+
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
 
 const DEFAULT_UI = {
   activeTab: "session" as const,
@@ -42,6 +48,7 @@ function mkSession(overrides: Partial<Session> = {}): Session {
 
 describe("SessionTabPanel - Data Loss Warning (Spec 00 §9)", () => {
   beforeEach(async () => {
+    mockPush.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -142,5 +149,79 @@ describe("SessionTabPanel - Data Loss Warning (Spec 00 §9)", () => {
 
     const link = wrapper.getByTestId("switch-session-link-session-tab");
     expect(link).toHaveAttribute("href", "/sessions");
+  });
+
+  it("shows delete session button when session exists", async () => {
+    const sessionId = "session-tab-test";
+    const session = mkSession({ id: sessionId });
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const { container } = render(<SessionTabPanel sessionId={sessionId} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    const deleteBtn = wrapper.getByTestId("delete-session-button");
+    expect(deleteBtn).toHaveTextContent("Delete session");
+  });
+
+  it("Cancel closes modal without deleting", async () => {
+    const sessionId = "session-tab-test";
+    const session = mkSession({ id: sessionId });
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const user = userEvent.setup();
+    const { container } = render(<SessionTabPanel sessionId={sessionId} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    await user.click(wrapper.getByTestId("delete-session-button"));
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /delete session confirmation/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("delete-session-cancel"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("confirm deletes and redirects to /sessions", async () => {
+    const sessionId = "session-tab-test";
+    const session = mkSession({ id: sessionId });
+    const db = await openDatabase();
+    await putSession(db, session);
+    db.close();
+
+    const user = userEvent.setup();
+    const { container } = render(<SessionTabPanel sessionId={sessionId} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const wrapper = within(container);
+    await user.click(wrapper.getByTestId("delete-session-button"));
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: /delete session confirmation/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("delete-session-confirm"));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/sessions");
+    });
   });
 });

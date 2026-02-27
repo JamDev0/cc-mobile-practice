@@ -9,7 +9,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { deleteDB } from "idb";
 import { openDatabase } from "./db";
-import { putSession, getSession, listSessions } from "./sessionAdapter";
+import {
+  putSession,
+  getSession,
+  listSessions,
+  deleteSessionCascade,
+} from "./sessionAdapter";
 import { putPdfBlob, getPdfBlob } from "./pdfBlobAdapter";
 import { putMarker, listMarkersBySession } from "./markerAdapter";
 import { putGabaritoEntry, listGabaritoEntriesBySession } from "./gabaritoAdapter";
@@ -145,6 +150,49 @@ describe("IndexedDB create->reload->read", () => {
     }
   });
 
+<<<<<<< HEAD
+  it("deleteSessionCascade removes session, PDF blob, markers, gabarito", async () => {
+    const session = makeSession();
+    const marker = makeMarker();
+    const gabaritoEntry = makeGabaritoEntry();
+    const pdfBlob = new Blob(["fake pdf content"], { type: "application/pdf" });
+
+    {
+      const db = await openDatabase();
+      await putSession(db, session);
+      await putPdfBlob(db, session.id, pdfBlob);
+      await putMarker(db, marker);
+      await putGabaritoEntry(db, gabaritoEntry);
+      db.close();
+    }
+
+    {
+      const db = await openDatabase();
+      await deleteSessionCascade(db, session.id);
+      db.close();
+    }
+
+    {
+      const db = await openDatabase();
+      const restoredSession = await getSession(db, session.id);
+      expect(restoredSession).toBeUndefined();
+
+      const restoredBlob = await getPdfBlob(db, session.id);
+      expect(restoredBlob).toBeUndefined();
+
+      const markers = await listMarkersBySession(db, session.id);
+      expect(markers).toHaveLength(0);
+
+      const entries = await listGabaritoEntriesBySession(db, session.id);
+      expect(entries).toHaveLength(0);
+
+      const sessions = await listSessions(db);
+      expect(sessions).toHaveLength(0);
+
+      db.close();
+    }
+  });
+
   it("persists answer comments across close/reopen", async () => {
     const session = makeSession();
     const comment: AnswerComment = {
@@ -176,7 +224,6 @@ describe("IndexedDB create->reload->read", () => {
       const all = await listAnswerCommentsBySession(db, session.id);
       expect(all).toHaveLength(1);
       expect(all[0].comment).toBe("Need to review this one");
-
       db.close();
     }
   });

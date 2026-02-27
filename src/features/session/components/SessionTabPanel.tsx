@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { openDatabase } from "@/storage/indexeddb/db";
-import { getSession } from "@/storage/indexeddb/sessionAdapter";
+import {
+  getSession,
+  deleteSessionCascade,
+} from "@/storage/indexeddb/sessionAdapter";
 import type { Session } from "@/domain/models/types";
 
 /**
@@ -27,9 +31,104 @@ function formatByteLength(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function DeleteSessionConfirmModal({
+  sessionTitle,
+  onConfirm,
+  onCancel,
+}: {
+  sessionTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 1100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      role="dialog"
+      aria-label="Delete session confirmation"
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: "1.5rem",
+          maxWidth: 320,
+          width: "100%",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "1.125rem",
+            color: "#1f2937",
+          }}
+        >
+          Delete session
+        </h3>
+        <p style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>
+          Permanently delete &quot;{sessionTitle}&quot;?
+        </p>
+        <p
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "0.875rem",
+            color: "#6b7280",
+            lineHeight: 1.5,
+          }}
+        >
+          This cannot be undone. The session, PDF, markers, and answers will be
+          permanently removed.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            data-testid="delete-session-cancel"
+            style={{
+              padding: "0.5rem 1rem",
+              border: "1px solid #d1d5db",
+              borderRadius: 6,
+              background: "white",
+              fontSize: "0.875rem",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            data-testid="delete-session-confirm"
+            style={{
+              padding: "0.5rem 1rem",
+              border: "1px solid #dc2626",
+              borderRadius: 6,
+              background: "#dc2626",
+              color: "white",
+              fontSize: "0.875rem",
+            }}
+          >
+            Delete permanently
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadSession = useCallback(async () => {
     try {
@@ -47,6 +146,24 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
   useEffect(() => {
     loadSession();
   }, [loadSession]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!session || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const db = await openDatabase();
+      await deleteSessionCascade(db, sessionId);
+      db.close();
+      router.push("/sessions");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+      setIsDeleting(false);
+    }
+  }, [session, sessionId, isDeleting, router]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setShowDeleteModal(false);
+  }, []);
 
   if (error) {
     return (
@@ -208,6 +325,44 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
           Clearing browser data may delete your sessions permanently.
         </p>
       </section>
+
+      <section>
+        <h2
+          style={{
+            fontSize: "1rem",
+            fontWeight: 600,
+            margin: "0 0 0.5rem 0",
+            color: "#202124",
+          }}
+        >
+          Danger zone
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          data-testid="delete-session-button"
+          disabled={isDeleting}
+          style={{
+            padding: "0.5rem 1rem",
+            border: "1px solid #dc2626",
+            borderRadius: 6,
+            background: "white",
+            color: "#dc2626",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+          }}
+        >
+          {isDeleting ? "Deleting…" : "Delete session"}
+        </button>
+      </section>
+
+      {showDeleteModal && (
+        <DeleteSessionConfirmModal
+          sessionTitle={session.title}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
     </div>
   );
 }
