@@ -48,6 +48,7 @@ const LONG_PRESS_MOVE_THRESHOLD_PX = 10;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.15;
+const VIEWPORT_HORIZONTAL_PADDING_PX = 32;
 
 export function PdfViewport({
   pdfBlob,
@@ -338,8 +339,9 @@ export function PdfViewport({
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
+  const containerWidth = containerRef.current?.clientWidth ?? 400;
   const baseWidth = Math.min(
-    containerRef.current?.clientWidth ?? 400,
+    Math.max(containerWidth - VIEWPORT_HORIZONTAL_PADDING_PX, 0),
     400
   );
   const scaledWidth = baseWidth * scale;
@@ -387,12 +389,13 @@ export function PdfViewport({
         flex: 1,
         minHeight: 0,
         width: "100%",
-        overflow: disableScroll ? "hidden" : "auto",
+        overflowY: disableScroll ? "hidden" : "auto",
+        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         padding: "1rem",
-        touchAction: disableScroll ? "none" : "pan-x pan-y",
+        touchAction: disableScroll ? "none" : "pan-y",
         overscrollBehavior: "none",
         background: "var(--color-bg)",
       }}
@@ -479,7 +482,7 @@ export function PdfViewport({
               style={{
                 cursor: "pointer",
                 position: "relative",
-                touchAction: disableScroll ? "none" : "pan-x pan-y",
+                touchAction: disableScroll ? "none" : "pan-y",
                 userSelect: "none",
                 WebkitUserSelect: "none",
               }}

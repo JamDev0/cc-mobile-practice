@@ -145,11 +145,12 @@ describe("PdfViewport interactions", () => {
       />
     );
     const viewport = screen.getByTestId("pdf-viewport-scroll");
-    const style = viewport.getAttribute("style") ?? "";
-    expect(style).toContain("overflow: hidden");
+    const style = viewport as HTMLElement;
+    expect(style.style.overflowY).toBe("hidden");
+    expect(style.style.overflowX).toBe("hidden");
   });
 
-  it("allows scroll when disableScroll is false", () => {
+  it("allows vertical scroll when disableScroll is false", () => {
     render(
       <PdfViewport
         pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
@@ -166,11 +167,12 @@ describe("PdfViewport interactions", () => {
       />
     );
     const viewport = screen.getByTestId("pdf-viewport-scroll");
-    const style = viewport.getAttribute("style") ?? "";
-    expect(style).toContain("overflow: auto");
+    const style = viewport as HTMLElement;
+    expect(style.style.overflowY).toBe("auto");
+    expect(style.style.overflowX).toBe("hidden");
   });
 
-  it("uses pan-x pan-y touch-action when scroll enabled to block browser pinch zoom", () => {
+  it("uses pan-y touch-action when scroll enabled to prevent side panning", () => {
     render(
       <PdfViewport
         pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
@@ -188,7 +190,7 @@ describe("PdfViewport interactions", () => {
     );
     const viewport = screen.getByTestId("pdf-viewport-scroll");
     const touchAction = (viewport as HTMLElement).style.touchAction;
-    expect(touchAction).toBe("pan-x pan-y");
+    expect(touchAction).toBe("pan-y");
   });
 
   it("renders only a buffered page range instead of full document immediately", () => {

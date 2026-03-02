@@ -114,3 +114,37 @@ test("review jump from answer on late page scrolls solve viewport to target", as
     })
     .toBe(true);
 });
+
+test("pdf viewport keeps vertical-only scrolling", async ({ page }) => {
+  await createSessionWithPdf(page, 6);
+
+  const viewport = page.getByTestId("pdf-viewport-scroll");
+
+  const before = await viewport.evaluate((node) => ({
+    scrollTop: node.scrollTop,
+    scrollLeft: node.scrollLeft,
+    scrollHeight: node.scrollHeight,
+    clientHeight: node.clientHeight,
+    scrollWidth: node.scrollWidth,
+    clientWidth: node.clientWidth,
+  }));
+
+  await viewport.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+    node.scrollLeft = 120;
+  });
+
+  const after = await viewport.evaluate((node) => ({
+    scrollTop: node.scrollTop,
+    scrollLeft: node.scrollLeft,
+    scrollHeight: node.scrollHeight,
+    clientHeight: node.clientHeight,
+    scrollWidth: node.scrollWidth,
+    clientWidth: node.clientWidth,
+  }));
+
+  expect(after.scrollTop).toBeGreaterThan(before.scrollTop);
+  expect(after.scrollHeight).toBeGreaterThan(after.clientHeight);
+  expect(after.scrollLeft).toBe(0);
+  expect(after.scrollWidth).toBeLessThanOrEqual(after.clientWidth);
+});
