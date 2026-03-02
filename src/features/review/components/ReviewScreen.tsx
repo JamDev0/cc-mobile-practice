@@ -3,15 +3,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useReviewSession } from "../hooks/useReviewSession";
-import { useTheme } from "@/shared/theme/ThemeProvider";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import { EditGabaritoModal } from "./EditGabaritoModal";
 import { ImportGabaritoModal } from "./ImportGabaritoModal";
-import { InkReviewDisplay } from "@/variants/ink";
 import { TerraReviewDisplay } from "@/variants/terra";
-import { FrostReviewDisplay } from "@/variants/frost";
-import { NoirReviewDisplay } from "@/variants/noir";
-import { CitrusReviewDisplay } from "@/variants/citrus";
 import type { JumpRequest } from "@/features/solve/types";
 import type { Marker, ReviewRow } from "@/domain/models/types";
 
@@ -202,7 +197,6 @@ interface ReviewScreenProps {
 }
 
 export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
-  const { theme } = useTheme();
   const {
     session,
     snapshot,
@@ -311,19 +305,9 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
     clearWriteError,
   };
 
-  const ReviewDisplay = (() => {
-    switch (theme) {
-      case "ink": return InkReviewDisplay;
-      case "terra": return TerraReviewDisplay;
-      case "frost": return FrostReviewDisplay;
-      case "noir": return NoirReviewDisplay;
-      case "citrus": return CitrusReviewDisplay;
-    }
-  })();
-
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "auto" }}>
-      <ReviewDisplay {...displayProps} />
+      <TerraReviewDisplay {...displayProps} />
 
       {editGabaritoRow && (
         <EditGabaritoModal

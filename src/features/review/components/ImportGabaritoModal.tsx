@@ -180,7 +180,7 @@ export function ImportGabaritoModal({
                 color: "var(--color-text-secondary)",
               }}
             >
-              Format (ambiguous \u2014 choose)
+              {"Format (ambiguous \u2014 choose)"}
             </label>
             <select
               id="import-format"
@@ -260,8 +260,8 @@ export function ImportGabaritoModal({
               color: "var(--color-input-text)",
             }}
           >
-            <option value="replace">Replace \u2014 remove existing, insert new</option>
-            <option value="merge">Merge \u2014 update overlaps, keep others</option>
+            <option value="replace">{"Replace \u2014 remove existing, insert new"}</option>
+            <option value="merge">{"Merge \u2014 update overlaps, keep others"}</option>
           </select>
         </div>
 
@@ -277,7 +277,7 @@ export function ImportGabaritoModal({
             }}
           >
             <p style={{ margin: "0 0 0.5rem 0", color: "var(--color-text)", fontFamily: "var(--font-family-mono)" }}>
-              Imported: {report.importedCount} \u00B7 Skipped: {report.skippedCount}
+              Imported: {report.importedCount} {"\u00B7"} Skipped: {report.skippedCount}
             </p>
             {report.skippedCount > 0 && report.warnings.length > 0 && (
               <>
@@ -307,7 +307,7 @@ export function ImportGabaritoModal({
                           fontSize: "0.8125rem",
                         }}
                       >
-                        #{w.index + 1}: &quot;{w.rawValue}&quot; \u2014 {w.reason}
+                        #{w.index + 1}: &quot;{w.rawValue}&quot; {"\u2014"} {w.reason}
                       </li>
                     ))}
                   </ul>

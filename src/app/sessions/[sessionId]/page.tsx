@@ -3,13 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useTheme } from "@/shared/theme/ThemeProvider";
 import { SessionTabPanel } from "@/features/session/components/SessionTabPanel";
-import { InkSessionShell } from "@/variants/ink";
 import { TerraSessionShell } from "@/variants/terra";
-import { FrostSessionShell } from "@/variants/frost";
-import { NoirSessionShell } from "@/variants/noir";
-import { CitrusSessionShell } from "@/variants/citrus";
 import type { JumpRequest } from "@/features/solve/types";
 import type { TabId } from "@/variants/types";
 
@@ -68,7 +63,6 @@ function TabContent({
 export default function SessionPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
-  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabId>("solve");
   const [pendingJumpRequest, setPendingJumpRequest] =
     useState<JumpRequest | null>(null);
@@ -89,23 +83,13 @@ export default function SessionPage() {
     />
   );
 
-  const shellProps = {
-    sessionId,
-    activeTab,
-    onTabChange: setActiveTab,
-    children: tabContent,
-  };
-
-  switch (theme) {
-    case "ink":
-      return <InkSessionShell {...shellProps} />;
-    case "terra":
-      return <TerraSessionShell {...shellProps} />;
-    case "frost":
-      return <FrostSessionShell {...shellProps} />;
-    case "noir":
-      return <NoirSessionShell {...shellProps} />;
-    case "citrus":
-      return <CitrusSessionShell {...shellProps} />;
-  }
+  return (
+    <TerraSessionShell
+      sessionId={sessionId}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      {tabContent}
+    </TerraSessionShell>
+  );
 }

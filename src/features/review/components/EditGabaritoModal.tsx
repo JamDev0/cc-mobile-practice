@@ -63,7 +63,7 @@ export function EditGabaritoModal({
             color: "var(--color-text)",
           }}
         >
-          Edit gabarito \u2014 Q{questionNumber}
+          {"Edit gabarito \u2014 Q"}{questionNumber}
         </h3>
         <div style={{ marginBottom: "1rem" }}>
           <label

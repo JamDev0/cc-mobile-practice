@@ -13,6 +13,7 @@ interface MarkerDotProps {
   onDragEnd: (xPct: number, yPct: number) => void;
   getPageRect: () => DOMRect | undefined;
   isHighlighted: boolean;
+  gabaritoToken?: string | null;
 }
 
 const DRAG_THRESHOLD_PX = 4;
@@ -25,19 +26,27 @@ export function MarkerDot({
   onDragEnd,
   getPageRect,
   isHighlighted,
+  gabaritoToken = null,
 }: MarkerDotProps) {
   const [dragPos, setDragPos] = useState<{ xPct: number; yPct: number } | null>(
     null
   );
+  const [committedPos, setCommittedPos] = useState<{ xPct: number; yPct: number } | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
   const lastDragPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
   const ignoreNextClickRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
   const pendingPosRef = useRef<{ xPct: number; yPct: number } | null>(null);
+  const prevMarkerPos = useRef({ xPct: marker.xPct, yPct: marker.yPct });
 
-  const displayX = dragPos?.xPct ?? marker.xPct;
-  const displayY = dragPos?.yPct ?? marker.yPct;
+  if (prevMarkerPos.current.xPct !== marker.xPct || prevMarkerPos.current.yPct !== marker.yPct) {
+    prevMarkerPos.current = { xPct: marker.xPct, yPct: marker.yPct };
+    if (committedPos) setCommittedPos(null);
+  }
+
+  const displayX = dragPos?.xPct ?? committedPos?.xPct ?? marker.xPct;
+  const displayY = dragPos?.yPct ?? committedPos?.yPct ?? marker.yPct;
   const { pixelX, pixelY } = pctToPixel(
     displayX,
     displayY,
@@ -106,6 +115,7 @@ export function MarkerDot({
       setDragPos(null);
 
       if (didDragRef.current && committed) {
+        setCommittedPos(committed);
         ignoreNextClickRef.current = true;
         onDragEnd(committed.xPct, committed.yPct);
       }
@@ -125,8 +135,23 @@ export function MarkerDot({
 
   const token = marker.answerToken ?? "?";
   const isConflict = marker.status === "conflict";
+  const showGabarito = gabaritoToken != null;
+  const isCorrect = showGabarito && gabaritoToken === marker.answerToken;
+  const isWrong = showGabarito && gabaritoToken !== marker.answerToken;
 
   return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        transform: `translate(${pixelX - 14}px, ${pixelY - 14}px)`,
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 2,
+        pointerEvents: "none",
+      }}
+    >
     <div
       className="marker-dot"
       data-marker-id={marker.id}
@@ -154,15 +179,12 @@ export function MarkerDot({
         }
       }}
       style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        transform: `translate(${pixelX - 12}px, ${pixelY - 12}px)`,
+        position: "relative",
         willChange: dragPos ? "transform" : "auto",
-        width: 24,
-        height: 24,
-        minWidth: 24,
-        minHeight: 24,
+        width: 28,
+        height: 28,
+        minWidth: 28,
+        minHeight: 28,
         borderRadius: "50%",
         background: isConflict
           ? "var(--color-marker-conflict)"
@@ -171,10 +193,9 @@ export function MarkerDot({
             : "var(--color-marker-valid)",
         color: "white",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 10,
-        fontWeight: 600,
         cursor: "grab",
         pointerEvents: "auto",
         boxShadow: isHighlighted
@@ -182,9 +203,38 @@ export function MarkerDot({
           : "var(--shadow-sm)",
         transition: dragPos ? "none" : "box-shadow 0.2s",
         touchAction: "none",
+        lineHeight: 1,
+        gap: 0,
       }}
     >
-      {token}
+      <span style={{ fontSize: 7, fontWeight: 700, opacity: 0.85, letterSpacing: "-0.02em" }}>
+        {marker.questionNumber}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 700, marginTop: -1 }}>
+        {token}
+      </span>
+    </div>
+    {showGabarito && (
+      <div
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: isCorrect ? "var(--color-status-correct-bg)" : "var(--color-status-wrong-bg)",
+          color: isCorrect ? "var(--color-status-correct-fg)" : "var(--color-status-wrong-fg)",
+          border: `1.5px solid ${isCorrect ? "var(--color-status-correct-fg)" : "var(--color-status-wrong-fg)"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 9,
+          fontWeight: 700,
+          marginTop: 4,
+          pointerEvents: "none",
+        }}
+      >
+        {gabaritoToken}
+      </div>
+    )}
     </div>
   );
 }

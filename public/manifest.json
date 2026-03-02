@@ -1,0 +1,9 @@
+{
+  "name": "Mobile Practice",
+  "short_name": "Practice",
+  "start_url": "/sessions",
+  "display": "standalone",
+  "background_color": "#f5f0e8",
+  "theme_color": "#c2410c",
+  "description": "Solve PDF-based exams offline"
+}

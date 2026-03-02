@@ -2,7 +2,6 @@
 
 import React, { useCallback, useState } from "react";
 import Link from "next/link";
-import { useTheme, THEME_IDS, type ThemeId } from "@/shared/theme/ThemeProvider";
 import type {
   SessionShellProps,
   SessionsLayoutProps,
@@ -42,117 +41,6 @@ const STATUS_VAR_MAP: Record<RowStatus, { bg: string; fg: string }> = {
   },
 };
 
-// --- TerraHome
-export function TerraHome() {
-  const { theme, setTheme, meta } = useTheme();
-
-  return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem 1.5rem",
-        fontFamily: "var(--font-family)",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 400,
-          width: "100%",
-          padding: "2rem 1.5rem",
-          background: "var(--color-surface)",
-          borderRadius: 24,
-          boxShadow: "var(--shadow-lg)",
-          border: "1px solid var(--color-border)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "1.25rem",
-          textAlign: "center",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.75rem",
-            fontWeight: "var(--font-weight-heading)",
-            letterSpacing: "var(--letter-spacing-heading)",
-            color: "var(--color-text)",
-          }}
-        >
-          Mobile Practice
-        </h1>
-        <p
-          style={{
-            fontSize: "0.9375rem",
-            color: "var(--color-text-secondary)",
-            lineHeight: 1.6,
-          }}
-        >
-          Solve PDF-based exams, capture answers, import answer keys, and review
-          your grades.
-        </p>
-        <Link
-          href="/sessions"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem 1.5rem",
-            background: "var(--color-accent)",
-            color: "var(--color-accent-text)",
-            borderRadius: "var(--radius-xl)",
-            textDecoration: "none",
-            fontSize: "1rem",
-            fontWeight: 600,
-            minWidth: 180,
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          Open Sessions
-        </Link>
-      </div>
-
-      <div
-        style={{
-          marginTop: "2.5rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
-        }}
-      >
-        {THEME_IDS.map((id) => {
-          const isActive = theme === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTheme(id as ThemeId)}
-              aria-pressed={isActive}
-              aria-label={`Select ${meta[id].label} theme`}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                border: isActive
-                  ? "2px solid var(--color-accent)"
-                  : "1px solid var(--color-border)",
-                background: isActive
-                  ? "var(--color-accent-soft)"
-                  : "var(--color-surface)",
-                cursor: "pointer",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            />
-          );
-        })}
-      </div>
-    </main>
-  );
-}
-
 // --- TerraSessions
 const TABS: { id: TabId; label: string }[] = [
   { id: "solve", label: "Solve" },
@@ -178,36 +66,17 @@ export function TerraSessions({
         fontFamily: "var(--font-family)",
       }}
     >
-      <div
+      <h1
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          fontSize: "1.5rem",
+          fontWeight: "var(--font-weight-heading)",
+          letterSpacing: "var(--letter-spacing-heading)",
+          color: "var(--color-text)",
           marginBottom: "1.5rem",
         }}
       >
-        <h1
-          style={{
-            fontSize: "1.5rem",
-            fontWeight: "var(--font-weight-heading)",
-            letterSpacing: "var(--letter-spacing-heading)",
-            color: "var(--color-text)",
-          }}
-        >
-          Sessions
-        </h1>
-        <Link
-          href="/"
-          style={{
-            fontSize: "0.9375rem",
-            color: "var(--color-accent)",
-            textDecoration: "none",
-            fontWeight: 500,
-          }}
-        >
-          Home
-        </Link>
-      </div>
+        Sessions
+      </h1>
 
       <button
         type="button"
@@ -366,11 +235,18 @@ export function TerraSessionShell({
           </span>
           <Link
             href="/sessions"
+            data-testid="switch-session-link-header"
+            aria-label="Switch session"
             style={{
               fontSize: "0.8125rem",
               color: "var(--color-accent)",
               textDecoration: "none",
               fontWeight: 500,
+              minWidth: 44,
+              minHeight: 44,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             Switch
@@ -392,6 +268,7 @@ export function TerraSessionShell({
       </div>
 
       <nav
+        role="tablist"
         style={{
           position: "fixed",
           bottom: 12,
@@ -413,6 +290,8 @@ export function TerraSessionShell({
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => onTabChange(tab.id)}
               style={{
                 flex: 1,
@@ -467,6 +346,7 @@ function TerraCommentTextarea({
       onChange={(e) => setValue(e.target.value)}
       onBlur={handleBlur}
       placeholder="Add a comment..."
+      data-testid={`comment-textarea-Q${questionNumber}`}
       aria-label={`Comment for question ${questionNumber}`}
       style={{
         width: "100%",
@@ -516,6 +396,7 @@ export function TerraReviewDisplay({
     >
       {writeError && (
         <div
+          role="alert"
           style={{
             padding: "1rem 1.25rem",
             background: "var(--color-danger-soft)",
@@ -597,9 +478,33 @@ export function TerraReviewDisplay({
       >
         Correct: {snapshot.correctCount} · Wrong: {snapshot.wrongCount} · Blank:{" "}
         {snapshot.blankCount}
+        {(() => {
+          const missingUser = snapshot.rows.filter(
+            (r) => r.userMarkers.length === 0 && r.gabaritoToken != null
+          ).length;
+          const missingGab = snapshot.rows.filter(
+            (r) => r.userMarkers.length > 0 && r.gabaritoToken == null
+          ).length;
+          return (
+            <>
+              {missingUser > 0 && (
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  Missing user answers: {missingUser}
+                </span>
+              )}
+              {missingGab > 0 && (
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  Missing gabarito answers: {missingGab}
+                </span>
+              )}
+            </>
+          );
+        })()}
       </p>
 
       <div
+        role="table"
+        aria-label="Review results"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -649,8 +554,8 @@ function TerraReviewCard({
   onSaveComment,
 }: TerraReviewCardProps) {
   const statusVars = STATUS_VAR_MAP[row.status];
-  const userToken = row.effectiveUserToken ?? "-";
-  const gabToken = row.gabaritoToken ?? "-";
+  const userToken = row.effectiveUserToken ?? "\u2014";
+  const gabToken = row.gabaritoToken ?? "\u2014";
   const hasComment = !!getCommentByQuestion(row.questionNumber);
   const isExpanded = expandedCommentRow === row.questionNumber;
 
@@ -706,6 +611,7 @@ function TerraReviewCard({
           <div style={{ display: "flex", gap: "1rem", alignItems: "baseline" }}>
             <button
               type="button"
+              data-testid={`user-answer-Q${row.questionNumber}`}
               onClick={() => onUserAnswerTap(row)}
               style={{
                 background: "none",
@@ -717,10 +623,12 @@ function TerraReviewCard({
                 fontFamily: "var(--font-family-mono)",
               }}
             >
-              You: {userToken}
+              <span style={{ color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>You </span>
+              <span>{userToken}</span>
             </button>
             <button
               type="button"
+              data-testid={`gabarito-Q${row.questionNumber}`}
               onClick={() => onGabaritoTap(row.questionNumber)}
               style={{
                 background: "none",
@@ -732,7 +640,8 @@ function TerraReviewCard({
                 fontFamily: "var(--font-family-mono)",
               }}
             >
-              Key: {gabToken}
+              <span style={{ color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>Key </span>
+              <span>{gabToken}</span>
             </button>
           </div>
         </div>
@@ -751,22 +660,28 @@ function TerraReviewCard({
         </span>
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          {row.userMarkers.length > 0 && (
+            <button
+              type="button"
+              data-testid={`delete-Q${row.questionNumber}`}
+              aria-label={`Delete answer for question ${row.questionNumber}`}
+              onClick={() => onDeleteTap(row)}
+              style={{
+                padding: "0.5rem",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--color-text-muted)",
+                fontSize: "0.875rem",
+              }}
+            >
+              Delete
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => onDeleteTap(row)}
-            style={{
-              padding: "0.5rem",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--color-text-muted)",
-              fontSize: "0.875rem",
-            }}
-          >
-            Delete
-          </button>
-          <button
-            type="button"
+            data-testid={`comment-toggle-Q${row.questionNumber}`}
+            aria-label={hasComment ? `Edit comment for question ${row.questionNumber}` : `Add comment for question ${row.questionNumber}`}
             onClick={() => onToggleComment(row.questionNumber)}
             style={{
               padding: "0.5rem",

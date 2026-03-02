@@ -8,8 +8,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Home page", () => {
   test("renders title and sessions link", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Mobile Practice" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open Sessions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sessions" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Create session from PDF/i })
+    ).toBeVisible();
   });
 });
 
@@ -24,7 +26,7 @@ test.describe("Sessions page", () => {
 
   test("shows existing sessions section", async ({ page }) => {
     await page.goto("/sessions");
-    await expect(page.getByRole("heading", { name: "Existing sessions" })).toBeVisible();
+    await expect(page.getByText(/No sessions yet|Create session/i)).toBeVisible();
   });
 });
 

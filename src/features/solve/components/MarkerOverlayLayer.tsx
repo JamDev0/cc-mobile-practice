@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { MarkerDot } from "./MarkerDot";
-import type { Marker } from "@/domain/models/types";
+import type { AnswerToken, Marker } from "@/domain/models/types";
 
 interface MarkerOverlayLayerProps {
   markers: Marker[];
@@ -18,6 +18,8 @@ interface MarkerOverlayLayerProps {
   ) => void;
   getPageRect: () => DOMRect | undefined;
   highlightedMarkerId: string | null;
+  reviewMode?: boolean;
+  gabaritoByQuestion?: Map<number, AnswerToken>;
 }
 
 export function MarkerOverlayLayer({
@@ -29,6 +31,8 @@ export function MarkerOverlayLayer({
   onMarkerDragEnd,
   getPageRect,
   highlightedMarkerId,
+  reviewMode = false,
+  gabaritoByQuestion,
 }: MarkerOverlayLayerProps) {
   const pageMarkers = useMemo(
     () => markers.filter((m) => m.pageNumber === pageNumber),
@@ -51,6 +55,7 @@ export function MarkerOverlayLayer({
           }
           getPageRect={getPageRect}
           isHighlighted={marker.id === highlightedMarkerId}
+          gabaritoToken={reviewMode ? gabaritoByQuestion?.get(marker.questionNumber) ?? null : null}
         />
       ))}
     </>

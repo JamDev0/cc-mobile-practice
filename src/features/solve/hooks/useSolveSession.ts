@@ -11,13 +11,14 @@ import {
   deleteMarker,
 } from "@/storage/indexeddb/markerAdapter";
 import { putSession } from "@/storage/indexeddb/sessionAdapter";
+import { listGabaritoEntriesBySession } from "@/storage/indexeddb/gabaritoAdapter";
 import { deriveMarkerStatuses } from "@/domain/conflicts/deriveMarkerStatuses";
 import {
   validateMarkerQuestionNumber,
   normalizeCoordinates,
 } from "@/domain/models/invariants";
 import { isValidAnswerToken } from "@/domain/models/invariants";
-import type { Session, Marker, AnswerToken } from "@/domain/models/types";
+import type { Session, Marker, AnswerToken, GabaritoEntry } from "@/domain/models/types";
 import type { PendingMarker } from "../types";
 
 function generateId(): string {
@@ -54,6 +55,7 @@ export interface UseSolveSessionResult {
   setHighlightedMarkerId: (id: string | null) => void;
   existingQuestionNumbers: Set<number>;
   pendingAnchor: { x: number; y: number } | null;
+  gabaritoByQuestion: Map<number, AnswerToken>;
   /** E_PDF_BLOB_MISSING recovery: reattach PDF to session when blob missing. */
   reattachPdf: (file: File) => Promise<{ ok: boolean; error?: string }>;
   clearWriteError: () => void;
@@ -69,6 +71,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
   const [editMarker, setEditMarker] = useState<Marker | null>(null);
   const [highlightedMarkerId, setHighlightedMarkerId] = useState<string | null>(null);
   const [activePage, setActivePage] = useState(1);
+  const [gabaritoByQuestion, setGabaritoByQuestion] = useState<Map<number, AnswerToken>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [sessionNotFound, setSessionNotFound] = useState(false);
@@ -87,11 +90,15 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
         const s = await getSession(db, sessionId);
         const blob = await getPdfBlob(db, sessionId);
         const m = await listMarkersBySession(db, sessionId);
+        const g = await listGabaritoEntriesBySession(db, sessionId);
         db.close();
         if (signal.aborted) return;
         setSession(s ?? null);
         setPdfBlob(blob ?? null);
         setMarkers(deriveMarkerStatuses(m));
+        const gabMap = new Map<number, AnswerToken>();
+        for (const entry of g) gabMap.set(entry.questionNumber, entry.answerToken);
+        setGabaritoByQuestion(gabMap);
         setPageCountState(s?.pageCount ?? null);
         setSessionNotFound(s == null);
       } catch (err) {
@@ -346,6 +353,7 @@ export function useSolveSession(sessionId: string | null): UseSolveSessionResult
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,
+    gabaritoByQuestion,
     reattachPdf,
     clearWriteError,
   };

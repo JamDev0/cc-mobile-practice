@@ -56,9 +56,12 @@ export function SolveScreen({
     setHighlightedMarkerId,
     existingQuestionNumbers,
     pendingAnchor,
+    gabaritoByQuestion,
     reattachPdf,
     clearWriteError,
   } = useSolveSession(sessionId);
+
+  const [reviewMode, setReviewMode] = useState(false);
 
   const [reattachError, setReattachError] = useState<string | null>(null);
   const reattachInputRef = useRef<HTMLInputElement>(null);
@@ -182,12 +185,7 @@ export function SolveScreen({
       setScrollToMarkerId(marker.id);
       openEditMarker(marker);
       if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-      highlightTimeoutRef.current = setTimeout(() => {
-        setHighlightedMarkerId(null);
-        setScrollToPageNumber(null);
-        setScrollToMarkerId(null);
-        highlightTimeoutRef.current = null;
-      }, HIGHLIGHT_PULSE_MS);
+      highlightTimeoutRef.current = null;
     },
     [setActivePage, setHighlightedMarkerId, openEditMarker]
   );
@@ -209,6 +207,8 @@ export function SolveScreen({
           onMarkerDragEnd={handleMarkerDragEnd}
           getPageRect={getPageRect}
           highlightedMarkerId={highlightedMarkerId}
+          reviewMode={reviewMode}
+          gabaritoByQuestion={gabaritoByQuestion}
         />
       );
     },
@@ -217,6 +217,8 @@ export function SolveScreen({
       handleMarkerClick,
       handleMarkerDragEnd,
       highlightedMarkerId,
+      reviewMode,
+      gabaritoByQuestion,
     ]
   );
 
@@ -390,6 +392,34 @@ export function SolveScreen({
           {jumpError}
         </div>
       )}
+      <button
+        type="button"
+        onClick={() => setReviewMode((prev) => !prev)}
+        style={{
+          position: "fixed",
+          bottom: 80,
+          right: 16,
+          zIndex: 90,
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          border: reviewMode ? "2px solid var(--color-accent)" : "1px solid var(--color-border)",
+          background: reviewMode ? "var(--color-accent)" : "var(--color-surface)",
+          color: reviewMode ? "var(--color-accent-text)" : "var(--color-text-muted)",
+          cursor: "pointer",
+          boxShadow: "var(--shadow-lg)",
+          fontSize: "0.6875rem",
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--font-family)",
+        }}
+        aria-label={reviewMode ? "Hide gabarito answers" : "Show gabarito answers"}
+        aria-pressed={reviewMode}
+      >
+        Review
+      </button>
       <PdfViewport
         pdfBlob={pdfBlob}
         pageCount={pageCount}

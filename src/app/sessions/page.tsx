@@ -3,21 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
 import { useRouter } from "next/navigation";
-import { useTheme } from "@/shared/theme/ThemeProvider";
 import {
   createSessionFromPdf,
   listSessions,
 } from "@/features/session/service/sessionService";
 import type { Session } from "@/domain/models/types";
-import { InkSessions } from "@/variants/ink";
 import { TerraSessions } from "@/variants/terra";
-import { FrostSessions } from "@/variants/frost";
-import { NoirSessions } from "@/variants/noir";
-import { CitrusSessions } from "@/variants/citrus";
 
 export default function SessionsPage() {
   const router = useRouter();
-  const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,26 +73,16 @@ export default function SessionsPage() {
     onCreateClick: handleCreateClick,
   };
 
-  const fileInput = (
-    <input
-      ref={fileInputRef}
-      type="file"
-      accept="application/pdf"
-      onChange={handleFileChange}
-      style={{ display: "none" }}
-    />
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+      <TerraSessions {...layoutProps} />
+    </>
   );
-
-  switch (theme) {
-    case "ink":
-      return <>{fileInput}<InkSessions {...layoutProps} /></>;
-    case "terra":
-      return <>{fileInput}<TerraSessions {...layoutProps} /></>;
-    case "frost":
-      return <>{fileInput}<FrostSessions {...layoutProps} /></>;
-    case "noir":
-      return <>{fileInput}<NoirSessions {...layoutProps} /></>;
-    case "citrus":
-      return <>{fileInput}<CitrusSessions {...layoutProps} /></>;
-  }
 }

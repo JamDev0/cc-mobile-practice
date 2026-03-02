@@ -29,7 +29,7 @@ describe("SessionsPage - NFR-001 instrumentation", () => {
     render(<SessionsPage />);
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading sessions...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
     });
 
     const measurements = getMeasurements();
