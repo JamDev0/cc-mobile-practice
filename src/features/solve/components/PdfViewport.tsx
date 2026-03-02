@@ -66,6 +66,8 @@ export function PdfViewport({
 }: PdfViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRectRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const activePageRef = useRef(activePage);
+  const scrollRafRef = useRef<number | null>(null);
   const longPressRef = useRef<{
     pointerId: number;
     pageNumber: number;
@@ -81,6 +83,18 @@ export function PdfViewport({
     Map<number, { width: number; height: number }>
   >(new Map());
   const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    activePageRef.current = activePage;
+  }, [activePage]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current != null) {
+        cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (scrollToPageNumber == null) return;
@@ -329,6 +343,8 @@ export function PdfViewport({
     400
   );
   const scaledWidth = baseWidth * scale;
+  const devicePixelRatio =
+    typeof window === "undefined" ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
 
   if (!pdfBlob) {
     return (
@@ -348,10 +364,15 @@ export function PdfViewport({
   }
 
   const startPage = 1;
+  const renderWindowEnd = Math.max(
+    activePage + RENDER_WINDOW_FALLBACK,
+    scrollToPageNumber != null ? scrollToPageNumber + RENDER_WINDOW_FALLBACK : 0,
+    3
+  );
   const endPage =
     pageCount != null
-      ? pageCount
-      : Math.max(activePage + RENDER_WINDOW_FALLBACK, 3);
+      ? Math.min(pageCount, renderWindowEnd)
+      : renderWindowEnd;
 
   const pages = [];
   for (let p = startPage; p <= endPage; p++) {
@@ -381,24 +402,30 @@ export function PdfViewport({
         }
         if (disableScroll) return;
         if (!containerRef.current || pageCount == null) return;
-        const el = containerRef.current;
-        const containerRect = el.getBoundingClientRect();
-        const viewportCenterY = containerRect.top + containerRect.height / 2;
-        const pageEls = el.querySelectorAll("[data-page-number]");
-        let closestPage = activePage;
-        let minDist = Infinity;
-        for (const pageEl of pageEls) {
-          const num = pageEl.getAttribute("data-page-number");
-          if (!num) continue;
-          const rect = pageEl.getBoundingClientRect();
-          const pageCenterY = rect.top + rect.height / 2;
-          const dist = Math.abs(pageCenterY - viewportCenterY);
-          if (dist < minDist) {
-            minDist = dist;
-            closestPage = parseInt(num, 10);
+        if (scrollRafRef.current != null) return;
+        scrollRafRef.current = requestAnimationFrame(() => {
+          scrollRafRef.current = null;
+          const el = containerRef.current;
+          if (!el) return;
+          const containerRect = el.getBoundingClientRect();
+          const viewportCenterY = containerRect.top + containerRect.height / 2;
+          let closestPage = activePageRef.current;
+          let minDist = Infinity;
+          for (const [pageNumber, pageEl] of pageRectRefs.current.entries()) {
+            if (!pageEl) continue;
+            const rect = pageEl.getBoundingClientRect();
+            const pageCenterY = rect.top + rect.height / 2;
+            const dist = Math.abs(pageCenterY - viewportCenterY);
+            if (dist < minDist) {
+              minDist = dist;
+              closestPage = pageNumber;
+            }
           }
-        }
-        if (closestPage !== activePage) onActivePageChange(closestPage);
+          if (closestPage !== activePageRef.current) {
+            activePageRef.current = closestPage;
+            onActivePageChange(closestPage);
+          }
+        });
       }}
     >
       <Document
@@ -429,7 +456,11 @@ export function PdfViewport({
             }}
             data-page-number={pageNum}
             ref={(el) => {
-              if (el) pageRectRefs.current.set(pageNum, el);
+              if (el) {
+                pageRectRefs.current.set(pageNum, el);
+              } else {
+                pageRectRefs.current.delete(pageNum);
+              }
             }}
           >
             <div
@@ -456,6 +487,9 @@ export function PdfViewport({
               <Page
                 pageNumber={pageNum}
                 width={scaledWidth}
+                devicePixelRatio={devicePixelRatio}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
                 onLoadSuccess={(page) => {
                   handlePageLoadSuccess({
                     pageNumber: pageNum,

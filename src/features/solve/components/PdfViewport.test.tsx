@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { PdfViewport } from "./PdfViewport";
 
+const { pagePropsSpy } = vi.hoisted(() => ({
+  pagePropsSpy: vi.fn(),
+}));
+
 vi.mock("react-pdf", () => {
   const Document = ({
     children,
@@ -21,12 +25,19 @@ vi.mock("react-pdf", () => {
   };
   const Page = ({
     pageNumber,
+    renderTextLayer,
+    renderAnnotationLayer,
+    devicePixelRatio,
     onLoadSuccess,
   }: {
     pageNumber: number;
+    renderTextLayer?: boolean;
+    renderAnnotationLayer?: boolean;
+    devicePixelRatio?: number;
     onLoadSuccess?: (payload: { width: number; height: number }) => void;
   }) => {
     const didCallRef = React.useRef(false);
+    pagePropsSpy({ pageNumber, renderTextLayer, renderAnnotationLayer, devicePixelRatio });
     React.useEffect(() => {
       if (didCallRef.current) return;
       didCallRef.current = true;
@@ -41,6 +52,7 @@ describe("PdfViewport interactions", () => {
   beforeEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    pagePropsSpy.mockClear();
     vi.useRealTimers();
   });
 
@@ -177,6 +189,51 @@ describe("PdfViewport interactions", () => {
     const viewport = screen.getByTestId("pdf-viewport-scroll");
     const touchAction = (viewport as HTMLElement).style.touchAction;
     expect(touchAction).toBe("pan-x pan-y");
+  });
+
+  it("renders only a buffered page range instead of full document immediately", () => {
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={10}
+        onPageCountKnown={() => {}}
+        onPageTap={() => {}}
+        renderMarkerOverlay={() => null}
+        pendingMarker={null}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+      />
+    );
+
+    expect(screen.getByText("Page 1")).toBeInTheDocument();
+    expect(screen.getByText("Page 2")).toBeInTheDocument();
+    expect(screen.getByText("Page 3")).toBeInTheDocument();
+    expect(screen.queryByText("Page 4")).not.toBeInTheDocument();
+  });
+
+  it("disables non-essential PDF layers to reduce render work", () => {
+    render(
+      <PdfViewport
+        pdfBlob={new Blob(["%PDF-1.4"], { type: "application/pdf" })}
+        pageCount={1}
+        onPageCountKnown={() => {}}
+        onPageTap={() => {}}
+        renderMarkerOverlay={() => null}
+        pendingMarker={null}
+        activePage={1}
+        onActivePageChange={() => {}}
+        highlightedMarkerId={null}
+        scrollToPageNumber={null}
+      />
+    );
+
+    const firstPageProps = pagePropsSpy.mock.calls[0]?.[0];
+    expect(firstPageProps).toMatchObject({
+      renderTextLayer: false,
+      renderAnnotationLayer: false,
+    });
   });
 
   it("jump prefers marker target when marker is mounted", async () => {
