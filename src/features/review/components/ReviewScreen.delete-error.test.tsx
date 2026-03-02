@@ -23,6 +23,15 @@ vi.mock("@/storage/indexeddb/markerAdapter", async (importOriginal) => {
 });
 
 const DB_NAME = "mobile-practice-db";
+const mockDestructiveConfirm = vi.fn();
+
+vi.mock("@/shared/hooks/useAppHaptics", () => ({
+  useAppHaptics: () => ({
+    selection: vi.fn(),
+    success: vi.fn(),
+    destructiveConfirm: mockDestructiveConfirm,
+  }),
+}));
 
 const DEFAULT_UI = {
   activeTab: "review" as const,
@@ -82,6 +91,7 @@ function mkGabarito(
 
 describe("ReviewScreen - RDA-04 delete error", () => {
   beforeEach(async () => {
+    mockDestructiveConfirm.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -122,5 +132,6 @@ describe("ReviewScreen - RDA-04 delete error", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(/IndexedDB delete failed|Failed to delete marker/);
+    expect(mockDestructiveConfirm).not.toHaveBeenCalled();
   });
 });

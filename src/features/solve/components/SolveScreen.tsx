@@ -8,6 +8,7 @@ import { RadialPickerPortal } from "./RadialPickerPortal";
 import { EditMarkerSheet } from "./EditMarkerSheet";
 import { useSolveSession } from "../hooks/useSolveSession";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
+import { useAppHaptics } from "@/shared/hooks/useAppHaptics";
 import type { AnswerToken, Marker } from "@/domain/models/types";
 import type { JumpRequest } from "../types";
 
@@ -60,6 +61,7 @@ export function SolveScreen({
     reattachPdf,
     clearWriteError,
   } = useSolveSession(sessionId);
+  const { selection, success } = useAppHaptics();
 
   const [reviewMode, setReviewMode] = useState(false);
 
@@ -150,10 +152,11 @@ export function SolveScreen({
       pointerId: number,
       pointerType: string
     ) => {
+      selection();
       setPendingPointer({ pointerId, pointerType, clientX, clientY });
       createPendingMarker(pageNumber, xPct, yPct, clientX, clientY);
     },
-    [createPendingMarker]
+    [createPendingMarker, selection]
   );
 
   const handlePageCountKnown = useCallback(
@@ -165,10 +168,16 @@ export function SolveScreen({
 
   const handleRadialSelect = useCallback(
     async (token: AnswerToken) => {
-      await commitMarker(token);
+      const committed = await commitMarker(token);
+      if (committed) success();
     },
-    [commitMarker]
+    [commitMarker, success]
   );
+
+  const handleReviewModeToggle = useCallback(() => {
+    setReviewMode((prev) => !prev);
+    selection();
+  }, [selection]);
 
   const handleMarkerDragEnd = useCallback(
     (markerId: string, pageNumber: number, xPct: number, yPct: number) => {
@@ -394,7 +403,7 @@ export function SolveScreen({
       )}
       <button
         type="button"
-        onClick={() => setReviewMode((prev) => !prev)}
+        onClick={handleReviewModeToggle}
         style={{
           position: "fixed",
           bottom: 80,

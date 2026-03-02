@@ -6,6 +6,7 @@
 import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { deleteDB } from "idb";
 import { openDatabase } from "@/storage/indexeddb/db";
 import { putSession } from "@/storage/indexeddb/sessionAdapter";
@@ -22,6 +23,8 @@ const DEFAULT_UI = {
   zoomMode: "free" as const,
   lastViewedPage: 1,
 };
+const mockSelection = vi.fn();
+const mockSuccess = vi.fn();
 
 vi.mock("./PdfViewport", () => {
   const React = require("react");
@@ -44,6 +47,13 @@ vi.mock("./PdfViewport", () => {
   };
   return { PdfViewport: MockPdfViewport };
 });
+vi.mock("@/shared/hooks/useAppHaptics", () => ({
+  useAppHaptics: () => ({
+    selection: mockSelection,
+    success: mockSuccess,
+    destructiveConfirm: vi.fn(),
+  }),
+}));
 
 async function seedSessionWithMarker(
   sessionId: string,
@@ -74,6 +84,8 @@ async function seedSessionWithMarker(
 describe("SolveScreen - S-UI-04 jump-to-marker", () => {
   beforeEach(async () => {
     cleanup();
+    mockSelection.mockClear();
+    mockSuccess.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -354,5 +366,37 @@ describe("SolveScreen - S-UI-04 jump-to-marker", () => {
       expect(viewport).toHaveAttribute("data-scroll-to-marker-id", marker.id);
       expect(viewport).toHaveAttribute("data-highlighted-marker-id", marker.id);
     });
+  });
+
+  it("triggers selection haptic on review mode toggle", async () => {
+    const sessionId = "jump-toggle-haptics";
+    const marker: Marker = {
+      id: "marker-haptic-toggle",
+      sessionId,
+      pageNumber: 1,
+      xPct: 0.5,
+      yPct: 0.5,
+      questionNumber: 1,
+      answerToken: "A",
+      status: "valid",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await seedSessionWithMarker(sessionId, marker);
+
+    render(<SolveScreen sessionId={sessionId} />);
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show gabarito answers" })
+    );
+
+    expect(mockSelection).toHaveBeenCalledTimes(1);
   });
 });

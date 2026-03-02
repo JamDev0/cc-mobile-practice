@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useReviewSession } from "../hooks/useReviewSession";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
+import { useAppHaptics } from "@/shared/hooks/useAppHaptics";
 import { EditGabaritoModal } from "./EditGabaritoModal";
 import { ImportGabaritoModal } from "./ImportGabaritoModal";
 import { TerraReviewDisplay } from "@/variants/terra";
@@ -197,6 +198,7 @@ interface ReviewScreenProps {
 }
 
 export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
+  const { destructiveConfirm } = useAppHaptics();
   const {
     session,
     snapshot,
@@ -259,9 +261,10 @@ export function ReviewScreen({ sessionId, onRequestJump }: ReviewScreenProps) {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteConfirmTarget) return;
-    await deleteUserMarker(deleteConfirmTarget.markerId);
+    const deleted = await deleteUserMarker(deleteConfirmTarget.markerId);
+    if (deleted) destructiveConfirm();
     setDeleteConfirmTarget(null);
-  }, [deleteConfirmTarget, deleteUserMarker]);
+  }, [deleteConfirmTarget, deleteUserMarker, destructiveConfirm]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteConfirmTarget(null);

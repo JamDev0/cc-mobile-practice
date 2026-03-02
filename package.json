@@ -25,7 +25,8 @@
     "pdfjs-dist": "^5.4.624",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-pdf": "^10.4.1"
+    "react-pdf": "^10.4.1",
+    "web-haptics": "^0.0.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

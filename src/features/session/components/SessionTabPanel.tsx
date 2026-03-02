@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { openDatabase } from "@/storage/indexeddb/db";
+import { useAppHaptics } from "@/shared/hooks/useAppHaptics";
 import {
   getSession,
   deleteSessionCascade,
@@ -129,6 +130,7 @@ function DeleteSessionConfirmModal({
 
 export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
   const router = useRouter();
+  const { destructiveConfirm } = useAppHaptics();
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -158,12 +160,13 @@ export function SessionTabPanel({ sessionId }: SessionTabPanelProps) {
       const db = await openDatabase();
       await deleteSessionCascade(db, sessionId);
       db.close();
+      destructiveConfirm();
       router.push("/sessions");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setIsDeleting(false);
     }
-  }, [session, sessionId, isDeleting, router]);
+  }, [session, sessionId, isDeleting, router, destructiveConfirm]);
 
   const handleDeleteCancel = useCallback(() => {
     setShowDeleteModal(false);

@@ -16,6 +16,15 @@ import { ReviewScreen } from "./ReviewScreen";
 import type { GabaritoEntry, Marker, Session } from "@/domain/models/types";
 
 const DB_NAME = "mobile-practice-db";
+const mockDestructiveConfirm = vi.fn();
+
+vi.mock("@/shared/hooks/useAppHaptics", () => ({
+  useAppHaptics: () => ({
+    selection: vi.fn(),
+    success: vi.fn(),
+    destructiveConfirm: mockDestructiveConfirm,
+  }),
+}));
 
 const DEFAULT_UI = {
   activeTab: "review" as const,
@@ -75,6 +84,7 @@ function mkGabarito(
 
 describe("ReviewScreen - IRG-09, IRG-10", () => {
   beforeEach(async () => {
+    mockDestructiveConfirm.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -178,6 +188,7 @@ describe("ReviewScreen - IRG-09, IRG-10", () => {
 describe("ReviewScreen - Per-answer comments", () => {
   beforeEach(async () => {
     cleanup();
+    mockDestructiveConfirm.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -230,6 +241,7 @@ describe("ReviewScreen - Per-answer comments", () => {
 describe("ReviewScreen - RDA (Delete user answer)", () => {
   beforeEach(async () => {
     cleanup();
+    mockDestructiveConfirm.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -269,6 +281,7 @@ describe("ReviewScreen - RDA (Delete user answer)", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
+    expect(mockDestructiveConfirm).toHaveBeenCalledTimes(1);
 
     const wrapper = within(container);
     expect(wrapper.getAllByText("—").length).toBeGreaterThanOrEqual(1);

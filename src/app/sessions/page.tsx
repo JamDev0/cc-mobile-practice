@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { markViewInteractive } from "@/shared/utils/performanceProfiler";
+import { useAppHaptics } from "@/shared/hooks/useAppHaptics";
 import { useRouter } from "next/navigation";
 import {
   createSessionFromPdf,
@@ -12,6 +13,7 @@ import { TerraSessions } from "@/variants/terra";
 
 export default function SessionsPage() {
   const router = useRouter();
+  const { success } = useAppHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +53,14 @@ export default function SessionsPage() {
       setCreating(false);
       e.target.value = "";
       if (result.ok) {
+        success();
         await refreshSessions();
         router.push(`/sessions/${result.sessionId}`);
       } else {
         setError(result.error);
       }
     },
-    [router, refreshSessions]
+    [router, refreshSessions, success]
   );
 
   const handleCreateClick = useCallback(() => {

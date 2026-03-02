@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
+import { useAppHaptics } from "@/shared/hooks/useAppHaptics";
 import type { ImportFormat } from "@/domain/import/parser";
 import type { ImportReport, ImportWarning } from "@/domain/models/types";
 import type { ImportStrategy } from "../hooks/useReviewSession";
@@ -23,6 +24,7 @@ export function ImportGabaritoModal({
   detectFormat: detectFormatFn,
   onClose,
 }: ImportGabaritoModalProps) {
+  const { success } = useAppHaptics();
   const [rawText, setRawText] = useState("");
   const [format, setFormat] = useState<ImportFormat>("A");
   const [startQuestionNumber, setStartQuestionNumber] = useState("1");
@@ -53,10 +55,13 @@ export function ImportGabaritoModal({
         ...(effectiveFormat === "B" ? { startQuestionNumber: startNum ?? 1 } : {}),
       });
       setReport(result ?? null);
+      if (result && result.importedCount > 0) {
+        success();
+      }
     } finally {
       setIsSubmitting(false);
     }
-  }, [rawText, format, startQuestionNumber, strategy, isFormatAmbiguous, detected, onImport]);
+  }, [rawText, format, startQuestionNumber, strategy, isFormatAmbiguous, detected, onImport, success]);
 
   const trimmed = rawText.trim();
   const canSubmit = trimmed.length > 0;

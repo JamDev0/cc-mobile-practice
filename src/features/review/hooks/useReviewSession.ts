@@ -67,7 +67,7 @@ export interface UseReviewSessionResult {
     answerToken: AnswerToken
   ) => Promise<void>;
   deleteGabaritoEntry: (entryId: string) => Promise<void>;
-  deleteUserMarker: (markerId: string) => Promise<void>;
+  deleteUserMarker: (markerId: string) => Promise<boolean>;
   getGabaritoEntryByQuestion: (questionNumber: number) => GabaritoEntry | null;
   getCommentByQuestion: (questionNumber: number) => string | null;
   saveAnswerComment: (questionNumber: number, comment: string) => Promise<void>;
@@ -241,7 +241,7 @@ export function useReviewSession(
 
   const deleteUserMarker = useCallback(
     async (markerId: string) => {
-      if (!sessionId) return;
+      if (!sessionId) return false;
       try {
         const db = await openDatabase();
         await deleteMarker(db, markerId);
@@ -253,9 +253,11 @@ export function useReviewSession(
           computeGradingSnapshot(sessionId, deriveMarkerStatuses(m), g)
         );
         setWriteError(null);
+        return true;
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to delete marker";
         setWriteError(msg);
+        return false;
       }
     },
     [sessionId]

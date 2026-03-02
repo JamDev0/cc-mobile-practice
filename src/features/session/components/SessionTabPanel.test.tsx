@@ -17,8 +17,16 @@ import type { Session } from "@/domain/models/types";
 const DB_NAME = "mobile-practice-db";
 
 const mockPush = vi.fn();
+const mockDestructiveConfirm = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
+}));
+vi.mock("@/shared/hooks/useAppHaptics", () => ({
+  useAppHaptics: () => ({
+    selection: vi.fn(),
+    success: vi.fn(),
+    destructiveConfirm: mockDestructiveConfirm,
+  }),
 }));
 
 const DEFAULT_UI = {
@@ -49,6 +57,7 @@ function mkSession(overrides: Partial<Session> = {}): Session {
 describe("SessionTabPanel - Data Loss Warning (Spec 00 §9)", () => {
   beforeEach(async () => {
     mockPush.mockClear();
+    mockDestructiveConfirm.mockClear();
     await deleteDB(DB_NAME);
   });
 
@@ -223,5 +232,6 @@ describe("SessionTabPanel - Data Loss Warning (Spec 00 §9)", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/sessions");
     });
+    expect(mockDestructiveConfirm).toHaveBeenCalledTimes(1);
   });
 });
