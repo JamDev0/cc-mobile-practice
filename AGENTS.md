@@ -16,6 +16,7 @@
 ## Operational Notes
 
 - Next.js 16.1.6, App Router, `src/` layout per spec 04.
+- **cc-feedback**: In-product feedback (issue/feature) is provided by [cc-feedback](https://github.com/JamDev0/cc-feedback), vendored as git submodule at `vendor/cc-feedback`. After clone run `git submodule update --init`. Feedback endpoint: `NEXT_PUBLIC_FEEDBACK_ENDPOINT` (default `http://localhost:8787/v1/feedback`). To run the mock API: `cd vendor/cc-feedback/apps/mock-feedback-api && npm start`.
 
 ## Cursor Cloud specific instructions
 

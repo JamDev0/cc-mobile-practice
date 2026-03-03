@@ -1,0 +1,3 @@
+[submodule "vendor/cc-feedback"]
+	path = vendor/cc-feedback
+	url = https://github.com/JamDev0/cc-feedback.git

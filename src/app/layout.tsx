@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import { ServiceWorkerRegistration } from "@/shared/ServiceWorkerRegistration";
+import { FeedbackTriggerClient } from "@/components/FeedbackTriggerClient";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body>
         <ServiceWorkerRegistration />
         {children}
+        <FeedbackTriggerClient />
       </body>
     </html>
   );

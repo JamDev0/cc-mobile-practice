@@ -21,6 +21,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@cc-feedback/sdk-core": "file:vendor/cc-feedback/packages/feedback-sdk-core",
+    "@cc-feedback/sdk-web": "file:vendor/cc-feedback/packages/feedback-sdk-web",
+    "@cc-feedback/ui": "file:vendor/cc-feedback/packages/feedback-ui",
     "next": "^16.1.6",
     "pdfjs-dist": "^5.4.624",
     "react": "^19.2.4",

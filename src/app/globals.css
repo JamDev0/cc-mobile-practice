@@ -79,6 +79,7 @@ body {
   --radius-xl: 20px;
   --radius-sheet: 20px;
   --radius-modal: 16px;
+  --radius-pill: 100px;
 
   --shadow-sm: 0 1px 3px rgba(44, 36, 25, 0.06);
   --shadow-md: 0 4px 12px rgba(44, 36, 25, 0.08);
@@ -121,4 +122,106 @@ input, select, textarea, button {
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--color-accent);
   outline-offset: -1px;
+}
+
+/* Feedback trigger (cc-feedback) — TERRA visual identity */
+.feedback-trigger {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow:
+    var(--shadow-md),
+    0 2px 8px rgba(194, 65, 12, 0.2);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-body);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.feedback-trigger:hover {
+  background: var(--color-accent-hover);
+  box-shadow:
+    var(--shadow-lg),
+    0 4px 12px rgba(194, 65, 12, 0.25);
+  transform: translateY(-2px);
+}
+.feedback-trigger:active {
+  transform: translateY(0);
+  box-shadow:
+    var(--shadow-sm),
+    0 1px 4px rgba(194, 65, 12, 0.2);
+}
+.feedback-trigger:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.feedback-trigger svg {
+  transition: transform 0.2s ease;
+}
+.feedback-trigger:hover svg {
+  transform: scale(1.08);
+}
+.feedback-trigger-label {
+  letter-spacing: var(--letter-spacing-body);
+  white-space: nowrap;
+}
+/* Collapsed: label out of flow (no layout space). Expanded: in flow so button grows. */
+@media (min-width: 481px) {
+  .feedback-trigger-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    border: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .feedback-trigger:hover .feedback-trigger-label,
+  .feedback-trigger:focus-visible .feedback-trigger-label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    opacity: 1;
+    flex-shrink: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feedback-trigger,
+  .feedback-trigger:hover,
+  .feedback-trigger svg,
+  .feedback-trigger-label {
+    transition: none;
+  }
+  .feedback-trigger:hover {
+    transform: none;
+  }
+  .feedback-trigger:hover svg {
+    transform: none;
+  }
+}
+@media (max-width: 480px) {
+  .feedback-trigger-label {
+    display: none;
+  }
 }
