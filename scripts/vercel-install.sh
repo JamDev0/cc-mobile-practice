@@ -8,18 +8,26 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+CC_FEEDBACK_URL="https://github.com/JamDev0/cc-feedback.git"
 # Optional: use token for submodule clone (for private cc-feedback)
 # if [ -n "${GIT_SUBMODULE_TOKEN:-}" ]; then
-#   git config --global url."https://${GIT_SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
+#   CC_FEEDBACK_URL="https://${GIT_SUBMODULE_TOKEN}@github.com/JamDev0/cc-feedback.git"
 # fi
 
 echo "[vercel-install] Initializing git submodule vendor/cc-feedback..."
 git submodule update --init --recursive
 
 if [ ! -f "vendor/cc-feedback/package.json" ]; then
-  echo "[vercel-install] ERROR: vendor/cc-feedback/package.json missing after submodule update." >&2
-  echo "If cc-feedback is a private repo, set GIT_SUBMODULE_TOKEN in Vercel (GitHub PAT with repo read)." >&2
-  exit 1
+  echo "[vercel-install] Submodule update left vendor/cc-feedback empty (common on Vercel). Cloning manually..."
+  SUBMODULE_COMMIT="$(git rev-parse HEAD:vendor/cc-feedback)"
+  rm -rf vendor/cc-feedback
+  git clone --depth 1 "$CC_FEEDBACK_URL" vendor/cc-feedback
+  (cd vendor/cc-feedback && git fetch --depth 1 origin "$SUBMODULE_COMMIT" && git checkout "$SUBMODULE_COMMIT")
+  if [ ! -f "vendor/cc-feedback/package.json" ]; then
+    echo "[vercel-install] ERROR: vendor/cc-feedback/package.json still missing." >&2
+    echo "If cc-feedback is private, set GIT_SUBMODULE_TOKEN in Vercel and uncomment the token block in this script." >&2
+    exit 1
+  fi
 fi
 
 echo "[vercel-install] Installing and building vendor/cc-feedback..."
