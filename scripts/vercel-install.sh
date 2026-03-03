@@ -19,7 +19,13 @@ git submodule update --init --recursive
 
 if [ ! -f "vendor/cc-feedback/package.json" ]; then
   echo "[vercel-install] Submodule update left vendor/cc-feedback empty (common on Vercel). Cloning manually..."
-  SUBMODULE_COMMIT="$(git rev-parse HEAD:vendor/cc-feedback 2>/dev/null)" || true
+  RAW_REF="$(git rev-parse HEAD:vendor/cc-feedback 2>/dev/null)" || true
+  # Only use if it's a 40-char SHA (avoid passing rev specs like HEAD:vendor/cc-feedback into checkout)
+  if [ -n "${RAW_REF:-}" ] && [ "${#RAW_REF}" -eq 40 ] && [[ "$RAW_REF" =~ ^[0-9a-f]{40}$ ]]; then
+    SUBMODULE_COMMIT="$RAW_REF"
+  else
+    SUBMODULE_COMMIT=""
+  fi
   rm -rf vendor/cc-feedback
   git clone --depth 1 "$CC_FEEDBACK_URL" vendor/cc-feedback
   if [ -n "${SUBMODULE_COMMIT:-}" ]; then
