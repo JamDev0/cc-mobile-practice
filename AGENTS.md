@@ -17,6 +17,7 @@
 
 - Next.js 16.1.6, App Router, `src/` layout per spec 04.
 - **cc-feedback**: In-product feedback (issue/feature) is provided by [cc-feedback](https://github.com/JamDev0/cc-feedback), vendored as git submodule at `vendor/cc-feedback`. After clone run `git submodule update --init`, then `cd vendor/cc-feedback && npm install && npm run build` (required so `@cc-feedback/sdk-core` and `@cc-feedback/sdk-web` have `dist/`). Feedback endpoint: `NEXT_PUBLIC_FEEDBACK_ENDPOINT` (default `http://localhost:8787/v1/feedback`). To run the mock API: `cd vendor/cc-feedback/apps/mock-feedback-api && npm start`.
+- **Vercel**: Deploy uses `vercel.json` → `installCommand`: `bash scripts/vercel-install.sh`, which inits the submodule, builds `vendor/cc-feedback`, then runs root `npm install`. For a **private** cc-feedback repo, set env `GIT_SUBMODULE_TOKEN` (e.g. GitHub PAT with repo read) in Vercel and uncomment the token block in `scripts/vercel-install.sh`.
 
 ## Cursor Cloud specific instructions
 
