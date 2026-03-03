@@ -28,6 +28,7 @@ Mobile web app for solving PDF-based exams: tap the PDF to place answer markers,
 git clone <repo-url>
 cd mobile-practice
 git submodule update --init   # for cc-feedback (in-product feedback)
+cd vendor/cc-feedback && npm install && npm run build && cd ../..   # build vendor packages (sdk-core, sdk-web) so dist/ exists
 npm install
 npm run dev
 ```
