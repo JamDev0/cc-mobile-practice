@@ -19,10 +19,12 @@ git submodule update --init --recursive
 
 if [ ! -f "vendor/cc-feedback/package.json" ]; then
   echo "[vercel-install] Submodule update left vendor/cc-feedback empty (common on Vercel). Cloning manually..."
-  SUBMODULE_COMMIT="$(git rev-parse HEAD:vendor/cc-feedback)"
+  SUBMODULE_COMMIT="$(git rev-parse HEAD:vendor/cc-feedback 2>/dev/null)" || true
   rm -rf vendor/cc-feedback
   git clone --depth 1 "$CC_FEEDBACK_URL" vendor/cc-feedback
-  (cd vendor/cc-feedback && git fetch --depth 1 origin "$SUBMODULE_COMMIT" && git checkout "$SUBMODULE_COMMIT")
+  if [ -n "${SUBMODULE_COMMIT:-}" ]; then
+    (cd vendor/cc-feedback && git fetch --depth 1 origin "$SUBMODULE_COMMIT" && git checkout "$SUBMODULE_COMMIT")
+  fi
   if [ ! -f "vendor/cc-feedback/package.json" ]; then
     echo "[vercel-install] ERROR: vendor/cc-feedback/package.json still missing." >&2
     echo "If cc-feedback is private, set GIT_SUBMODULE_TOKEN in Vercel and uncomment the token block in this script." >&2
